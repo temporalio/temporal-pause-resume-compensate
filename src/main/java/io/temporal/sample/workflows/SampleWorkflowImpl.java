@@ -17,20 +17,30 @@ public class SampleWorkflowImpl implements SampleWorkflow {
     private Logger logger = Workflow.getLogger(SampleWorkflowImpl.class);
     private SampleActivities activities = Workflow.newActivityStub(SampleActivities.class,
             ActivityOptions.newBuilder()
-                    .setStartToCloseTimeout(Duration.ofSeconds(4))
+                    .setStartToCloseTimeout(Duration.ofSeconds(10))
+                    .setHeartbeatTimeout(Duration.ofSeconds(3))
                     .build());
+    // Activities promise
+    private Promise<Void> activitiesPromise;
 
     @Override
     public String run(SampleInput input) {
 
         // Create the timer promise
         Promise<Void> timerPromise = Workflow.newTimer(Duration.ofSeconds(input.getTimer()));
-        // Create activities promise
-        Promise<Void> activitiesPromise = Async.procedure(this::runActivities);
+
+        // Create cancellation scope for activities
+        CancellationScope scope =
+                Workflow.newCancellationScope(
+                        () -> {
+                            activitiesPromise = Async.procedure(this::runActivities);
+                        });
+        scope.run();
 
         Promise.anyOf(timerPromise, activitiesPromise).get();
         if(timerPromise.isCompleted()) {
-            // need to cancel activities here and compensate...
+            // cancel activities
+            scope.cancel("timer fired");
             return "{\"result\":\"timer completed first..." + input.getTimer() +"\"}";
         } else {
             return "{\"result\":\"activities completed first..." + input.getTimer() +"\"}";
