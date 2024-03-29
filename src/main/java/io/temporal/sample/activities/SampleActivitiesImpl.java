@@ -76,11 +76,11 @@ public class SampleActivitiesImpl implements SampleActivities {
         return "done...";
     }
 
-        private void sleep(int seconds) {
-            try {
-                Thread.sleep(TimeUnit.SECONDS.toMillis(seconds));
-            } catch (InterruptedException ee) {
-                // Empty
-            }
+    private void sleep(int seconds) {
+        try {
+            Thread.sleep(TimeUnit.SECONDS.toMillis(seconds));
+        } catch (InterruptedException ee) {
+            // Empty
         }
+    }
 }
