@@ -11,7 +11,7 @@
                 <br/><br/><br/>
                 <h5>Say hello to:</h5>
                 <form action="/run", id="sampleform">
-<!--                    <p>First Name: <input type="text" name="firstName"/></p>-->
+                    <p>Timer Duration (s) <input type="text" name="timer"/></p>
 <!--                    <p>Last Name: <input type="text" name="lastName"/></p>-->
                     <p><input type="submit" value="Run Workflow" class="btn btn-primary" />
                         <input type="reset" value="Reset Form" class="btn btn-secondary" />
@@ -31,8 +31,8 @@
         event.preventDefault();
 
         var $form = $( this ),
-            firstName = $form.find( "input[name='firstName']" ).val(),
-            lastName = $form.find( "input[name='lastName']" ).val(),
+            timer = $form.find( "input[name='timer']" ).val(),
+            // lastName = $form.find( "input[name='lastName']" ).val(),
             url = $form.attr( "action" );
 
         $.ajax({
@@ -40,10 +40,9 @@
             'method':'POST',
             'dataType': 'json',
             'contentType': 'application/json',
-            // 'data':JSON.stringify({
-            //     "firstName": firstName,
-            //     "lastName": lastName
-            // }),
+            'data':JSON.stringify({
+                "timer": timer,
+            }),
             success: function(response) {
                 $( "#result" ).empty().append( response.result );
             },
