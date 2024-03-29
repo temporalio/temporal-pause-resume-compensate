@@ -8,12 +8,10 @@ spring:
   temporal:
     namespace: default
     connection:
-      target: local
+      target: 127.0.0.1:7233
     workers-auto-discovery:
       packages:
         - io.temporal.sample
-    test-server:
-      enabled: true
 management:
   endpoints:
     web:

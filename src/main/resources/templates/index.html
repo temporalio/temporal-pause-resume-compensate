@@ -5,11 +5,55 @@
 <div class="container">
     <div class="card">
         <div class="card-body">
-            <h5 class="card-title">Sample Int</h5>
-            <p class="card-text">See below how to run sample...</p>
-
+            <h4 class="card-title">Sample Int</h4>
+            <h6>Sample Int description...</h6>
+            <div class="form-group">
+                <br/><br/><br/>
+                <h5>Say hello to:</h5>
+                <form action="/run", id="sampleform">
+                    <p>First Name: <input type="text" name="firstName"/></p>
+                    <p>Last Name: <input type="text" name="lastName"/></p>
+                    <p><input type="submit" value="Run Workflow" class="btn btn-primary" />
+                        <input type="reset" value="Reset Form" class="btn btn-secondary" />
+                </form>
+            </div>
+        </div>
+        <div style="width: 18rem;">
+            <div>
+                <h5 class="card-title">Workflow result:</h5>
+                <div id="result"></div>
+            </div>
         </div>
     </div>
 </div>
+<script>
+    $("#sampleform").submit(function( event ) {
+        event.preventDefault();
+
+        var $form = $( this ),
+            firstName = $form.find( "input[name='firstName']" ).val(),
+            lastName = $form.find( "input[name='lastName']" ).val(),
+            url = $form.attr( "action" );
+
+        $.ajax({
+            'url': url,
+            'method':'POST',
+            'dataType': 'json',
+            'contentType': 'application/json',
+            // 'data':JSON.stringify({
+            //     "firstName": firstName,
+            //     "lastName": lastName
+            // }),
+            success: function(response) {
+                $( "#result" ).empty().append( response.result );
+            },
+            error: function(XMLHttpRequest, textStatus, errorThrown) {
+                alert("Status: " + textStatus); alert("Error: " + errorThrown);
+            }
+
+        });
+    });
+</script>
+<footer th:replace="fragments :: samples-footer"></footer>
 </body>
 </html>

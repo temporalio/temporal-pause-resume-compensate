@@ -1,6 +1,8 @@
 package io.temporal.sample;
 
 import io.temporal.client.WorkflowClient;
+import io.temporal.client.WorkflowOptions;
+import io.temporal.sample.workflows.SampleWorkflow;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -23,18 +25,15 @@ public class SampleIntController {
     @PostMapping(
             value = "/run",
             consumes = {MediaType.APPLICATION_JSON_VALUE},
-            produces = {MediaType.TEXT_HTML_VALUE})
-    ResponseEntity customizeSample() {
-//        CustomizeWorkflow workflow =
-//                client.newWorkflowStub(
-//                        CustomizeWorkflow.class,
-//                        WorkflowOptions.newBuilder()
-//                                .setTaskQueue("CustomizeTaskQueue")
-//                                .setWorkflowId("CustomizeSample")
-//                                .build());
-//
-//        // bypass thymeleaf, don't return template name just result
-        return new ResponseEntity<>("abc...", HttpStatus.OK);
+            produces = {MediaType.APPLICATION_JSON_VALUE})
+    ResponseEntity sampleInt() {
+        SampleWorkflow workflow =
+                client.newWorkflowStub(SampleWorkflow.class,
+                        WorkflowOptions.newBuilder()
+                                .setTaskQueue("samplequeue")
+                                .setWorkflowId("sample-workflow")
+                                .build());
+        return new ResponseEntity<>(workflow.run(), HttpStatus.OK);
     }
 
 }
