@@ -1,6 +1,7 @@
 package io.temporal.sample.workflows;
 
 import io.temporal.activity.ActivityOptions;
+import io.temporal.failure.ActivityFailure;
 import io.temporal.sample.activities.SampleActivities;
 import io.temporal.sample.model.SampleInput;
 import io.temporal.spring.boot.WorkflowImpl;
@@ -37,10 +38,13 @@ public class SampleWorkflowImpl implements SampleWorkflow {
                         });
         scope.run();
 
+        // Wait for timer and activities promises, whichever completes first
         Promise.anyOf(timerPromise, activitiesPromise).get();
+
         if(timerPromise.isCompleted()) {
             // cancel activities
             scope.cancel("timer fired");
+            // fail wf exec here if you want....TODO
             return "{\"result\":\"timer completed first..." + input.getTimer() +"\"}";
         } else {
             return "{\"result\":\"activities completed first..." + input.getTimer() +"\"}";
@@ -48,10 +52,14 @@ public class SampleWorkflowImpl implements SampleWorkflow {
     }
 
     private void runActivities() {
-        activities.one();
-        activities.two();
-        activities.three();
-        activities.four();
+        try {
+            activities.one();
+            activities.two();
+            activities.three();
+            activities.four();
+        } catch (ActivityFailure af) {
+            // TODO - what do here....
+        }
     }
 
 }
