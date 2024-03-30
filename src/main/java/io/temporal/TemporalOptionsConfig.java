@@ -20,7 +20,7 @@ public class TemporalOptionsConfig {
 
         // For CustomizeTaskQueue (also name of worker) we set worker
         // to only handle workflow tasks and local activities
-        if (taskQueue.equals("CustomizeTaskQueue")) {
+        if (taskQueue.equals("samplequeue")) {
           optionsBuilder.setStickyQueueScheduleToStartTimeout(Duration.ofSeconds(30));
         }
         return optionsBuilder;
