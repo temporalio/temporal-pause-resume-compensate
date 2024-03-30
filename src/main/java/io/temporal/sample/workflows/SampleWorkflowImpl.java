@@ -18,7 +18,7 @@ public class SampleWorkflowImpl implements SampleWorkflow {
     private Logger logger = Workflow.getLogger(SampleWorkflowImpl.class);
     private SampleActivities activities = Workflow.newActivityStub(SampleActivities.class,
             ActivityOptions.newBuilder()
-                    .setStartToCloseTimeout(Duration.ofSeconds(10))
+                    .setStartToCloseTimeout(Duration.ofSeconds(5))
                     .setHeartbeatTimeout(Duration.ofSeconds(3))
                     .build());
     // Activities promise
