@@ -1,15 +1,16 @@
 package io.temporal.sample.workflows;
 
+import io.temporal.activity.ActivityCancellationType;
 import io.temporal.activity.ActivityOptions;
+import io.temporal.api.enums.v1.ParentClosePolicy;
+import io.temporal.client.WorkflowExecutionAlreadyStarted;
+import io.temporal.client.WorkflowServiceException;
 import io.temporal.failure.ActivityFailure;
-import io.temporal.failure.ApplicationFailure;
+import io.temporal.failure.ChildWorkflowFailure;
 import io.temporal.sample.activities.SampleActivities;
 import io.temporal.sample.model.SampleInput;
 import io.temporal.spring.boot.WorkflowImpl;
-import io.temporal.workflow.Async;
-import io.temporal.workflow.CancellationScope;
-import io.temporal.workflow.Promise;
-import io.temporal.workflow.Workflow;
+import io.temporal.workflow.*;
 import org.slf4j.Logger;
 
 import java.time.Duration;
@@ -21,7 +22,10 @@ public class SampleWorkflowImpl implements SampleWorkflow {
             ActivityOptions.newBuilder()
                     .setStartToCloseTimeout(Duration.ofSeconds(5))
                     .setHeartbeatTimeout(Duration.ofSeconds(3))
+                    // set needed cancellation type
+                    .setCancellationType(ActivityCancellationType.TRY_CANCEL)
                     .build());
+
     // Activities promise
     private Promise<Void> activitiesPromise;
 
@@ -42,22 +46,38 @@ public class SampleWorkflowImpl implements SampleWorkflow {
         // Wait for timer and activities promises, whichever completes first
         Promise.anyOf(timerPromise, activitiesPromise).get();
 
-        if(timerPromise.isCompleted()) {
-            // cancel activities
-            scope.cancel("timer fired");
-            // fail wf exec here if you want....TODO
+        if (timerPromise.isCompleted()) {
+            scope.cancel("timer fired...");
+            SampleCleanupWorkflow cleanupChild =
+                    Workflow.newChildWorkflowStub(SampleCleanupWorkflow.class,
+                            ChildWorkflowOptions.newBuilder()
+                                    .setTaskQueue("samplecleanupqueue")
+                                    .setWorkflowId(Workflow.getInfo().getWorkflowId() + "-cleanup")
+                                    .setParentClosePolicy(ParentClosePolicy.PARENT_CLOSE_POLICY_ABANDON)
+                                    .build());
 
-            //  child workflow to do cleanup (dont wanna do)
-            // or do cleanup here
+            try {
+                // start child async, wait until it starts (not completes)
+                Async.function(cleanupChild::cleanup, input);
+                Workflow.getWorkflowExecution(cleanupChild).get();
+            } catch (ChildWorkflowFailure e) {
+                if (e.getCause() instanceof WorkflowExecutionAlreadyStarted) {
+                    // one reason could be workflow id reuse policy
+                    logger.error("Child workflow execution already started: " + e.getCause().getMessage());
+                } else if (e.getCause() instanceof WorkflowServiceException) {
+                    // could be some other type of service exception
+                    logger.error("Service exception starting child: " + e.getCause().getMessage());
+                } else {
+                    // something else?
+                    logger.error("Exception starting child: " + e.getCause().getMessage());
+                }
+            }
 
-            // cleanup here.... (dont wanna do this)
-            //
-
-            // child workflow async (< 200ms)
-
-            return "{\"result\":\"timer completed first..." + input.getTimer() +"\"}";
+            // client result
+            return "{\"result\":\"timer completed first..." + input.getTimer() + "\"}";
         } else {
-            return "{\"result\":\"activities completed first..." + input.getTimer() +"\"}";
+            // client result ..no cleanup needed
+            return "{\"result\":\"activities completed first..." + input.getTimer() + "\"}";
         }
     }
 
