@@ -1,4 +1,4 @@
-package io.temporal;
+package io.temporal.sample;
 
 import io.temporal.serviceclient.WorkflowServiceStubsOptions;
 import io.temporal.spring.boot.TemporalOptionsCustomizer;
@@ -6,10 +6,12 @@ import io.temporal.spring.boot.WorkerOptionsCustomizer;
 import io.temporal.worker.WorkerOptions;
 import javax.annotation.Nonnull;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
 import java.time.Duration;
 
+@Configuration
 public class TemporalOptionsConfig {
-  // Worker specific options customization
   @Bean
   public WorkerOptionsCustomizer customWorkerOptions() {
     return new WorkerOptionsCustomizer() {
@@ -20,8 +22,6 @@ public class TemporalOptionsConfig {
           @Nonnull String workerName,
           @Nonnull String taskQueue) {
 
-        // For CustomizeTaskQueue (also name of worker) we set worker
-        // to only handle workflow tasks and local activities
         if (taskQueue.equals("samplequeue")) {
           optionsBuilder.setStickyQueueScheduleToStartTimeout(Duration.ofSeconds(25));
         }
@@ -29,7 +29,7 @@ public class TemporalOptionsConfig {
       }
     };
   }  
-  // WorkflowServiceStubsOptions customization
+
   @Bean
   public TemporalOptionsCustomizer<WorkflowServiceStubsOptions.Builder>
       customServiceStubsOptions() {
