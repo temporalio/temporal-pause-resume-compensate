@@ -6,6 +6,7 @@ import io.temporal.client.WorkflowServiceException;
 import io.temporal.failure.ActivityFailure;
 import io.temporal.failure.ChildWorkflowFailure;
 import io.temporal.sample.activities.SampleActivities;
+import io.temporal.sample.exceptions.SampleCustomException;
 import io.temporal.sample.model.SampleInput;
 import io.temporal.sample.model.SampleResult;
 import io.temporal.spring.boot.WorkflowImpl;
@@ -74,8 +75,8 @@ public class SampleWorkflowImpl implements SampleWorkflow {
                 }
             }
 
-            // client result
-            return new SampleResult("Parent wf: timer completed first...");
+            // fail execution
+            throw Workflow.wrap(new SampleCustomException("failing execution..."));
         } else {
             // if any activities failed we want to call our "persist" activity again
             if(activitiesPromise.getFailure() != null) {

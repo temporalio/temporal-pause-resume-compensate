@@ -5,6 +5,7 @@ import io.temporal.activity.ActivityCancellationType;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.api.taskqueue.v1.TaskQueue;
 import io.temporal.common.RetryOptions;
+import io.temporal.sample.exceptions.SampleCustomException;
 import io.temporal.serviceclient.WorkflowServiceStubsOptions;
 import io.temporal.spring.boot.TemporalOptionsCustomizer;
 import io.temporal.spring.boot.WorkerOptionsCustomizer;
@@ -61,11 +62,8 @@ public class TemporalOptionsConfig {
             public WorkflowImplementationOptions.Builder customize(
                     @Nonnull WorkflowImplementationOptions.Builder optionsBuilder) {
 
-                // shows how to fail workflow execution on non-deterministic error
-                //optionsBuilder.setFailWorkflowExceptionTypes(NonDeterministicException.class);
-
-                // shows how to fail workflow execution on any workflow error
-                //optionsBuilder.setFailWorkflowExceptionTypes(Throwable.class);
+                // set workflow exec to fail on our custom exception type
+                optionsBuilder.setFailWorkflowExceptionTypes(SampleCustomException.class);
 
                 Map<String, ActivityOptions> perActivityOptions = new HashMap<>();
                 perActivityOptions.put("One", ActivityOptions.newBuilder()

@@ -1,8 +1,10 @@
 package io.temporal.sample;
 
 import io.temporal.client.WorkflowClient;
+import io.temporal.client.WorkflowFailedException;
 import io.temporal.client.WorkflowOptions;
 import io.temporal.sample.model.SampleInput;
+import io.temporal.sample.model.SampleResult;
 import io.temporal.sample.workflows.SampleWorkflow;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -35,7 +37,11 @@ public class SampleIntController {
                                 .setTaskQueue("samplequeue")
                                 .setWorkflowId("sample-workflow")
                                 .build());
-        return new ResponseEntity<>(workflow.run(input), HttpStatus.OK);
+        try {
+            return new ResponseEntity<>(workflow.run(input), HttpStatus.OK);
+        } catch (WorkflowFailedException e) {
+            return new ResponseEntity<>("Workflow failed: " + e.getMessage(), HttpStatus.OK);
+        }
     }
 
 }
