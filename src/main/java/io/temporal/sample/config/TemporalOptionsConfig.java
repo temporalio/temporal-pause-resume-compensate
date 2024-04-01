@@ -62,9 +62,6 @@ public class TemporalOptionsConfig {
             public WorkflowImplementationOptions.Builder customize(
                     @Nonnull WorkflowImplementationOptions.Builder optionsBuilder) {
 
-                // set workflow exec to fail on our custom exception type
-                optionsBuilder.setFailWorkflowExceptionTypes(SampleCustomException.class);
-
                 Map<String, ActivityOptions> perActivityOptions = new HashMap<>();
                 perActivityOptions.put("One", ActivityOptions.newBuilder()
                                 .setStartToCloseTimeout(Duration.ofSeconds(2))

@@ -4,23 +4,31 @@ import io.temporal.api.enums.v1.ParentClosePolicy;
 import io.temporal.client.WorkflowExecutionAlreadyStarted;
 import io.temporal.client.WorkflowServiceException;
 import io.temporal.failure.ActivityFailure;
+import io.temporal.failure.ApplicationFailure;
 import io.temporal.failure.ChildWorkflowFailure;
 import io.temporal.sample.activities.SampleActivities;
-import io.temporal.sample.exceptions.SampleCustomException;
 import io.temporal.sample.model.SampleInput;
 import io.temporal.sample.model.SampleResult;
 import io.temporal.spring.boot.WorkflowImpl;
 import io.temporal.workflow.*;
 import org.slf4j.Logger;
 
+import javax.annotation.Nullable;
 import java.time.Duration;
 
 @WorkflowImpl(taskQueues = "samplequeue")
 public class SampleWorkflowImpl implements SampleWorkflow {
     private Logger logger = Workflow.getLogger(SampleWorkflowImpl.class);
-
     // note per-activity options are set in TemporalOptionsConfig
     private SampleActivities activities = Workflow.newActivityStub(SampleActivities.class);
+    private SampleCleanupWorkflow cleanupChild =
+            Workflow.newChildWorkflowStub(SampleCleanupWorkflow.class,
+                    ChildWorkflowOptions.newBuilder()
+                            // If not set would use parent task queue name
+                            .setTaskQueue("samplecleanupqueue")
+                            .setWorkflowId(Workflow.getInfo().getWorkflowId() + "-cleanup")
+                            .setParentClosePolicy(ParentClosePolicy.PARENT_CLOSE_POLICY_ABANDON)
+                            .build());
     private Promise<Void> activitiesPromise;
 
     @Override
@@ -49,41 +57,42 @@ public class SampleWorkflowImpl implements SampleWorkflow {
         // if our timer promise completed but activities are still running
         if (timerPromise.isCompleted() && !activitiesPromise.isCompleted()) {
             scope.cancel("timer fired...");
-            SampleCleanupWorkflow cleanupChild =
-                    Workflow.newChildWorkflowStub(SampleCleanupWorkflow.class,
-                            ChildWorkflowOptions.newBuilder()
-                                    // If not set would use parent task queue name
-                                    .setTaskQueue("samplecleanupqueue")
-                                    .setWorkflowId(Workflow.getInfo().getWorkflowId() + "-cleanup")
-                                    .setParentClosePolicy(ParentClosePolicy.PARENT_CLOSE_POLICY_ABANDON)
-                                    .build());
-
-            try {
-                // start child async, wait until it starts (not completes)
-                Async.function(cleanupChild::cleanup, input);
-                Workflow.getWorkflowExecution(cleanupChild).get(); // 200 ms
-            } catch (ChildWorkflowFailure e) {
-                if (e.getCause() instanceof WorkflowExecutionAlreadyStarted) {
-                    // one reason could be workflow id reuse policy
-                    logger.error("Child workflow execution already started: " + e.getCause().getMessage());
-                } else if (e.getCause() instanceof WorkflowServiceException) {
-                    // could be some other type of service exception
-                    logger.error("Service exception starting child: " + e.getCause().getMessage());
-                } else {
-                    // something else?
-                    logger.error("Exception starting child: " + e.getCause().getMessage());
-                }
-            }
-
+            startCompensationChildAndRunPersistActivity(input);
             // fail execution
-            throw Workflow.wrap(new SampleCustomException("failing execution..."));
+            throw ApplicationFailure.newFailure("failing execution", "failure type");
         } else {
             // if any activities failed we want to call our "persist" activity again
             if(activitiesPromise.getFailure() != null) {
-                logger.info("Calling our follow-up activity that needs to run before we respond");
-                activities.five();
+                startCompensationChildAndRunPersistActivity(input);
             }
             return new SampleResult("Parent wf: normal result...");
+        }
+    }
+
+    private void startCompensationChildAndRunPersistActivity(SampleInput input) {
+        try {
+            // start child async, wait until it starts (not completes)
+            Async.function(cleanupChild::cleanup, input);
+            Workflow.getWorkflowExecution(cleanupChild).get(); // 200 ms
+        } catch (ChildWorkflowFailure e) {
+            if (e.getCause() instanceof WorkflowExecutionAlreadyStarted) {
+                // one reason could be workflow id reuse policy
+                logger.error("Child workflow execution already started: " + e.getCause().getMessage());
+            } else if (e.getCause() instanceof WorkflowServiceException) {
+                // could be some other type of service exception
+                logger.error("Service exception starting child: " + e.getCause().getMessage());
+            } else {
+                // something else?
+                logger.error("Exception starting child: " + e.getCause().getMessage());
+            }
+        }
+
+        // run our "persist" activity
+        try {
+            activities.five();
+        } catch (ActivityFailure e) {
+            // what do here? log for now
+            logger.warn("persist activity failed: " + e.getMessage());
         }
     }
 
@@ -93,8 +102,9 @@ public class SampleWorkflowImpl implements SampleWorkflow {
             activities.two();
             activities.three();
             activities.four();
-        } catch (ActivityFailure af) {
-            throw af;
+        } catch (ActivityFailure e) {
+            // just rethrow
+            throw e;
         }
     }
 
