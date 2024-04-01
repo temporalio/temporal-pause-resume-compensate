@@ -1,4 +1,4 @@
-package io.temporal.sample;
+package io.temporal.sample.config;
 
 import io.temporal.serviceclient.WorkflowServiceStubsOptions;
 import io.temporal.spring.boot.TemporalOptionsCustomizer;
