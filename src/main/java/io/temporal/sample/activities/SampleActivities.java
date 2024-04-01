@@ -8,4 +8,5 @@ public interface SampleActivities {
     String two();
     String three();
     String four();
+    String five();
 }

@@ -1,7 +1,5 @@
 package io.temporal.sample.workflows;
 
-import io.temporal.activity.ActivityCancellationType;
-import io.temporal.activity.ActivityOptions;
 import io.temporal.api.enums.v1.ParentClosePolicy;
 import io.temporal.client.WorkflowExecutionAlreadyStarted;
 import io.temporal.client.WorkflowServiceException;
@@ -19,21 +17,14 @@ import java.time.Duration;
 @WorkflowImpl(taskQueues = "samplequeue")
 public class SampleWorkflowImpl implements SampleWorkflow {
     private Logger logger = Workflow.getLogger(SampleWorkflowImpl.class);
-    private SampleActivities activities = Workflow.newActivityStub(SampleActivities.class,
-            ActivityOptions.newBuilder()
-                    .setStartToCloseTimeout(Duration.ofSeconds(5))
-                    .setHeartbeatTimeout(Duration.ofSeconds(3))
-                    // set needed cancellation type
-                    .setCancellationType(ActivityCancellationType.TRY_CANCEL)
-                    .build());
 
-    // Activities promise
+    // note per-activity options are set in TemporalOptionsConfig
+    private SampleActivities activities = Workflow.newActivityStub(SampleActivities.class);
     private Promise<Void> activitiesPromise;
 
     @Override
     public SampleResult run(SampleInput input) {
-
-        // Create the timer promise
+        // timer and activities promises
         Promise<Void> timerPromise = Workflow.newTimer(Duration.ofSeconds(input.getTimer()));
 
         // Create cancellation scope for activities
@@ -45,13 +36,22 @@ public class SampleWorkflowImpl implements SampleWorkflow {
         scope.run();
 
         // Wait for timer and activities promises, whichever completes first
-        Promise.anyOf(timerPromise, activitiesPromise).get();
+        try {
+            Promise.anyOf(timerPromise, activitiesPromise).get();
+        } catch (ActivityFailure e) {
+            // We need to handler ActivityFailure here as it will be delivered to workflow code in this .get() call
+            // However we just log it as will handle later with activitiesPromise.getFailure
+            // If we dont handle it here we would fail execution
+            logger.warn("Activity failure: " + e.getMessage());
+        }
 
-        if (timerPromise.isCompleted()) {
+        // if our timer promise completed but activities are still running
+        if (timerPromise.isCompleted() && !activitiesPromise.isCompleted()) {
             scope.cancel("timer fired...");
             SampleCleanupWorkflow cleanupChild =
                     Workflow.newChildWorkflowStub(SampleCleanupWorkflow.class,
                             ChildWorkflowOptions.newBuilder()
+                                    // If not set would use parent task queue name
                                     .setTaskQueue("samplecleanupqueue")
                                     .setWorkflowId(Workflow.getInfo().getWorkflowId() + "-cleanup")
                                     .setParentClosePolicy(ParentClosePolicy.PARENT_CLOSE_POLICY_ABANDON)
@@ -60,7 +60,7 @@ public class SampleWorkflowImpl implements SampleWorkflow {
             try {
                 // start child async, wait until it starts (not completes)
                 Async.function(cleanupChild::cleanup, input);
-                Workflow.getWorkflowExecution(cleanupChild).get();
+                Workflow.getWorkflowExecution(cleanupChild).get(); // 200 ms
             } catch (ChildWorkflowFailure e) {
                 if (e.getCause() instanceof WorkflowExecutionAlreadyStarted) {
                     // one reason could be workflow id reuse policy
@@ -77,7 +77,11 @@ public class SampleWorkflowImpl implements SampleWorkflow {
             // client result
             return new SampleResult("Parent wf: timer completed first...");
         } else {
-            // client result ..no cleanup needed
+            // if any activities failed we want to call our "persist" activity again
+            if(activitiesPromise.getFailure() != null) {
+                logger.info("Calling our follow-up activity that needs to run before we respond");
+                activities.five();
+            }
             return new SampleResult("Parent wf: normal result...");
         }
     }
@@ -87,13 +91,9 @@ public class SampleWorkflowImpl implements SampleWorkflow {
             activities.one();
             activities.two();
             activities.three();
-            activities.four(); // needs cancellation only
-            // TODO -- which activities are in cancelation scope
-            // should be easy to configure
-
+            activities.four();
         } catch (ActivityFailure af) {
-            // call activity 4 again
-            // TODO - what do here....
+            throw af;
         }
     }
 
