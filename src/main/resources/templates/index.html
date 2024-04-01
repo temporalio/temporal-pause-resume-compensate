@@ -44,7 +44,7 @@
                 "timer": timer,
             }),
             success: function(response) {
-                $( "#result" ).empty().append( response.result );
+                $( "#result" ).empty().append( response.message );
             },
             error: function(XMLHttpRequest, textStatus, errorThrown) {
                 alert("Status: " + textStatus); alert("Error: " + errorThrown);

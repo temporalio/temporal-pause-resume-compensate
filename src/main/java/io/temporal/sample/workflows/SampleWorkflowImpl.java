@@ -9,6 +9,7 @@ import io.temporal.failure.ActivityFailure;
 import io.temporal.failure.ChildWorkflowFailure;
 import io.temporal.sample.activities.SampleActivities;
 import io.temporal.sample.model.SampleInput;
+import io.temporal.sample.model.SampleResult;
 import io.temporal.spring.boot.WorkflowImpl;
 import io.temporal.workflow.*;
 import org.slf4j.Logger;
@@ -30,7 +31,7 @@ public class SampleWorkflowImpl implements SampleWorkflow {
     private Promise<Void> activitiesPromise;
 
     @Override
-    public String run(SampleInput input) {
+    public SampleResult run(SampleInput input) {
 
         // Create the timer promise
         Promise<Void> timerPromise = Workflow.newTimer(Duration.ofSeconds(input.getTimer()));
@@ -74,10 +75,10 @@ public class SampleWorkflowImpl implements SampleWorkflow {
             }
 
             // client result
-            return "{\"result\":\"timer completed first..." + input.getTimer() + "\"}";
+            return new SampleResult("Parent wf: timer completed first...");
         } else {
             // client result ..no cleanup needed
-            return "{\"result\":\"activities completed first..." + input.getTimer() + "\"}";
+            return new SampleResult("Parent wf: normal result...");
         }
     }
 
