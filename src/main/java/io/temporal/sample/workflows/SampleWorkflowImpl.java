@@ -2,6 +2,7 @@ package io.temporal.sample.workflows;
 
 import io.temporal.activity.ActivityOptions;
 import io.temporal.failure.ActivityFailure;
+import io.temporal.failure.ApplicationFailure;
 import io.temporal.sample.activities.SampleActivities;
 import io.temporal.sample.model.SampleInput;
 import io.temporal.spring.boot.WorkflowImpl;
@@ -45,6 +46,15 @@ public class SampleWorkflowImpl implements SampleWorkflow {
             // cancel activities
             scope.cancel("timer fired");
             // fail wf exec here if you want....TODO
+
+            //  child workflow to do cleanup (dont wanna do)
+            // or do cleanup here
+
+            // cleanup here.... (dont wanna do this)
+            //
+
+            // child workflow async (< 200ms)
+
             return "{\"result\":\"timer completed first..." + input.getTimer() +"\"}";
         } else {
             return "{\"result\":\"activities completed first..." + input.getTimer() +"\"}";
@@ -56,8 +66,12 @@ public class SampleWorkflowImpl implements SampleWorkflow {
             activities.one();
             activities.two();
             activities.three();
-            activities.four();
+            activities.four(); // needs cancellation only
+            // TODO -- which activities are in cancelation scope
+            // should be easy to configure
+
         } catch (ActivityFailure af) {
+            // call activity 4 again
             // TODO - what do here....
         }
     }
