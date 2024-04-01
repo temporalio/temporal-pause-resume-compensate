@@ -7,6 +7,7 @@ import io.temporal.failure.ActivityFailure;
 import io.temporal.failure.ApplicationFailure;
 import io.temporal.failure.ChildWorkflowFailure;
 import io.temporal.sample.activities.SampleActivities;
+import io.temporal.sample.exceptions.SampleCustomException;
 import io.temporal.sample.model.SampleInput;
 import io.temporal.sample.model.SampleResult;
 import io.temporal.spring.boot.WorkflowImpl;
@@ -58,8 +59,11 @@ public class SampleWorkflowImpl implements SampleWorkflow {
         if (timerPromise.isCompleted() && !activitiesPromise.isCompleted()) {
             scope.cancel("timer fired...");
             startCompensationChildAndRunPersistActivity(input);
-            // fail execution
-            throw ApplicationFailure.newFailure("failing execution", "failure type");
+            // fail execution\
+            // this works...
+//            throw ApplicationFailure.newFailure("failing execution", "failure type");
+            // this fails workflow task
+            throw Workflow.wrap(new SampleCustomException("failing execution..."));
         } else {
             // if any activities failed we want to call our "persist" activity again
             if(activitiesPromise.getFailure() != null) {
