@@ -4,6 +4,7 @@ import io.temporal.activity.Activity;
 import io.temporal.activity.ActivityExecutionContext;
 import io.temporal.client.ActivityCompletionException;
 import io.temporal.failure.ApplicationFailure;
+import io.temporal.sample.model.SampleResult;
 import io.temporal.spring.boot.ActivityImpl;
 import org.springframework.stereotype.Component;
 
@@ -13,27 +14,27 @@ import java.util.concurrent.TimeUnit;
 @ActivityImpl(taskQueues = "samplequeue")
 public class SampleActivitiesImpl implements SampleActivities {
     @Override
-    public String one() {
+    public SampleResult one() {
         sleep(1);
-        return "done...";
+        return new SampleResult("Activity one done...");
     }
 
     @Override
-    public String two() {
+    public SampleResult two() {
         sleep(1);
-        return "done...";
+        return new SampleResult("Activity two done...");
     }
 
     @Override
-    public String three() {
+    public SampleResult three() {
         sleep(1);
-//        return "done...";
+//        return new SampleResult("Activity three done...");
         throw ApplicationFailure.newNonRetryableFailure("simulated activity failure from three",
                 "some error", null);
     }
 
     @Override
-    public String four() {
+    public SampleResult four() {
         ActivityExecutionContext context = Activity.getExecutionContext();
         for (int i = 0; i < 6; i++) {
             sleep(1);
@@ -45,15 +46,8 @@ public class SampleActivitiesImpl implements SampleActivities {
                 throw e;
             }
         }
-        return "done...";
+        return new SampleResult("Activity four done...");
     }
-
-    @Override
-    public String five() {
-        sleep(1);
-        return "done...";
-    }
-
 
     private void sleep(int seconds) {
         try {

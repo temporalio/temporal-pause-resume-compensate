@@ -56,6 +56,7 @@ public class TemporalOptionsConfig {
                     @Nonnull WorkflowImplementationOptions.Builder optionsBuilder) {
 
                 Map<String, ActivityOptions> perActivityOptions = new HashMap<>();
+
                 perActivityOptions.put("One", ActivityOptions.newBuilder()
                         .setStartToCloseTimeout(Duration.ofSeconds(2))
                         .build());
@@ -72,10 +73,6 @@ public class TemporalOptionsConfig {
                         .setStartToCloseTimeout(Duration.ofSeconds(8))
                         .setHeartbeatTimeout(Duration.ofSeconds(3))
                         .setCancellationType(ActivityCancellationType.TRY_CANCEL)
-                        .build());
-
-                perActivityOptions.put("Five", ActivityOptions.newBuilder()
-                        .setStartToCloseTimeout(Duration.ofSeconds(2))
                         .build());
 
                 optionsBuilder.setActivityOptions(perActivityOptions);

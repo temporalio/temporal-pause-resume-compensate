@@ -1,16 +1,12 @@
 package io.temporal.sample.activities;
 
 import io.temporal.activity.ActivityInterface;
+import io.temporal.sample.model.SampleResult;
 
 @ActivityInterface
 public interface SampleActivities {
-    String one();
-
-    String two();
-
-    String three();
-
-    String four();
-
-    String five();
+    SampleResult one();
+    SampleResult two();
+    SampleResult three();
+    SampleResult four();
 }
