@@ -4,7 +4,6 @@ import io.temporal.client.WorkflowClient;
 import io.temporal.client.WorkflowFailedException;
 import io.temporal.client.WorkflowOptions;
 import io.temporal.sample.model.SampleInput;
-import io.temporal.sample.model.SampleResult;
 import io.temporal.sample.workflows.SampleWorkflow;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

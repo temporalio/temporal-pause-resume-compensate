@@ -1,23 +1,16 @@
 package io.temporal.sample.config;
 
-import com.uber.m3.util.ImmutableMap;
 import io.temporal.activity.ActivityCancellationType;
 import io.temporal.activity.ActivityOptions;
-import io.temporal.api.taskqueue.v1.TaskQueue;
-import io.temporal.common.RetryOptions;
-import io.temporal.sample.exceptions.SampleCustomException;
 import io.temporal.serviceclient.WorkflowServiceStubsOptions;
 import io.temporal.spring.boot.TemporalOptionsCustomizer;
 import io.temporal.spring.boot.WorkerOptionsCustomizer;
-import io.temporal.worker.NonDeterministicException;
 import io.temporal.worker.WorkerOptions;
-
-import javax.annotation.Nonnull;
-
 import io.temporal.worker.WorkflowImplementationOptions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import javax.annotation.Nonnull;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -62,11 +55,9 @@ public class TemporalOptionsConfig {
             public WorkflowImplementationOptions.Builder customize(
                     @Nonnull WorkflowImplementationOptions.Builder optionsBuilder) {
 
-                optionsBuilder.setFailWorkflowExceptionTypes(SampleCustomException.class);
-
                 Map<String, ActivityOptions> perActivityOptions = new HashMap<>();
                 perActivityOptions.put("One", ActivityOptions.newBuilder()
-                                .setStartToCloseTimeout(Duration.ofSeconds(2))
+                        .setStartToCloseTimeout(Duration.ofSeconds(2))
                         .build());
 
                 perActivityOptions.put("Two", ActivityOptions.newBuilder()
@@ -88,6 +79,7 @@ public class TemporalOptionsConfig {
                         .build());
 
                 optionsBuilder.setActivityOptions(perActivityOptions);
+
                 return optionsBuilder;
             }
         };

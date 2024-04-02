@@ -7,22 +7,20 @@ import io.temporal.failure.ActivityFailure;
 import io.temporal.failure.ApplicationFailure;
 import io.temporal.failure.ChildWorkflowFailure;
 import io.temporal.sample.activities.SampleActivities;
-import io.temporal.sample.exceptions.SampleCustomException;
 import io.temporal.sample.model.SampleInput;
 import io.temporal.sample.model.SampleResult;
 import io.temporal.spring.boot.WorkflowImpl;
 import io.temporal.workflow.*;
 import org.slf4j.Logger;
 
-import javax.annotation.Nullable;
 import java.time.Duration;
 
 @WorkflowImpl(taskQueues = "samplequeue")
 public class SampleWorkflowImpl implements SampleWorkflow {
-    private Logger logger = Workflow.getLogger(SampleWorkflowImpl.class);
+    private final Logger logger = Workflow.getLogger(SampleWorkflowImpl.class);
     // note per-activity options are set in TemporalOptionsConfig
-    private SampleActivities activities = Workflow.newActivityStub(SampleActivities.class);
-    private SampleCleanupWorkflow cleanupChild =
+    private final SampleActivities activities = Workflow.newActivityStub(SampleActivities.class);
+    private final SampleCleanupWorkflow cleanupChild =
             Workflow.newChildWorkflowStub(SampleCleanupWorkflow.class,
                     ChildWorkflowOptions.newBuilder()
                             // If not set would use parent task queue name
@@ -59,14 +57,11 @@ public class SampleWorkflowImpl implements SampleWorkflow {
         if (timerPromise.isCompleted() && !activitiesPromise.isCompleted()) {
             scope.cancel("timer fired...");
             startCompensationChildAndRunPersistActivity(input);
-            // fail execution\
-            // this works...
-//            throw ApplicationFailure.newFailure("failing execution", "failure type");
-            // this fails workflow task
-            throw Workflow.wrap(new SampleCustomException("failing execution..."));
+            // fail execution
+            throw ApplicationFailure.newFailure("failing execution", "TimerFired");
         } else {
             // if any activities failed we want to call our "persist" activity again
-            if(activitiesPromise.getFailure() != null) {
+            if (activitiesPromise.getFailure() != null) {
                 startCompensationChildAndRunPersistActivity(input);
             }
             return new SampleResult("Parent wf: normal result...");
