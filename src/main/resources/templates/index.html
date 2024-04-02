@@ -29,10 +29,14 @@
     $("#sampleform").submit(function( event ) {
         event.preventDefault();
 
+        var loader_img = '<img src="/img/spin.gif" alt="Loading" />';
+        $( "#result" ).empty().append( loader_img );
+
         var $form = $( this ),
             timer = $form.find( "input[name='timer']" ).val(),
             // lastName = $form.find( "input[name='lastName']" ).val(),
             url = $form.attr( "action" );
+
 
         $.ajax({
             'url': url,

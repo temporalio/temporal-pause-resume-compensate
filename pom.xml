@@ -11,22 +11,11 @@
 	<groupId>io.temporal</groupId>
 	<artifactId>sample-int</artifactId>
 	<version>1.0.0</version>
-	<name>Sample</name>
+	<name>Sample Int</name>
 	<properties>
 		<java.version>11</java.version>
 	</properties>
-	<repositories>
-		<repository>
-		<id>oss.sonatype.org-snapshot</id>
-		<url>https://oss.sonatype.org/content/repositories/snapshots</url>
-		<releases>
-			<enabled>false</enabled>
-		</releases>
-		<snapshots>
-			<enabled>true</enabled>
-		</snapshots>
-		</repository>
-	</repositories>	
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -55,17 +44,10 @@
 			<scope>runtime</scope>
 		</dependency>
 
-		<!-- Temporal Java SDK 
-		<dependency>
-			<groupId>io.temporal</groupId>
-			<artifactId>temporal-spring-boot-starter-alpha</artifactId>
-			<version>1.23.0</version>
-		</dependency>
-		-->
         <dependency>
             <groupId>io.temporal</groupId>
             <artifactId>temporal-spring-boot-starter-alpha</artifactId>
-            <version>1.24.0-20240328.165226-4</version>
+            <version>1.23.1</version>
         </dependency>
 
 		<dependency>
