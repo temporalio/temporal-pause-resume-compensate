@@ -51,17 +51,13 @@ public class SampleWorkflowImpl implements SampleWorkflow {
         if (timerPromise.isCompleted() && !activitiesPromise.isCompleted()) {
             scope.cancel("timer fired...");
             // run compensation in async child wf
-            // also add the "always" compensation activity info
-            saga.compensate(new SampleSaga.CompensationInfo.Builder()
-                    .setActivityType("CompensateAlways").build());
+            saga.compensate();
             // fail execution
             throw ApplicationFailure.newFailure("failing execution", "TimerFired");
         } else {
             if (activitiesPromise.getFailure() != null) {
                 // run compensation in async child wf
-                // also add the "always" compensation activity info
-                saga.compensate(new SampleSaga.CompensationInfo.Builder()
-                        .setActivityType("CompensateAlways").build());
+                saga.compensate();
                 return new SampleResult("Parent wf: result, compensation initiated...");
             }
             return new SampleResult("Parent wf: result, no compensation initiated....");
@@ -78,6 +74,7 @@ public class SampleWorkflowImpl implements SampleWorkflow {
         saga.addCompensation(new SampleSaga.CompensationInfo.Builder()
                 .setActivityType("CompensateThree").build());
         activities.three();
+
         saga.addCompensation(new SampleSaga.CompensationInfo.Builder()
                 .setActivityType("CompensateFour").build());
         activities.four();
