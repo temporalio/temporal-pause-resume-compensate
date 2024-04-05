@@ -18,6 +18,7 @@ public class SampleWorkflowImpl implements SampleWorkflow {
     // note per-activity options are set in TemporalOptionsConfig
     private final SampleActivities activities = Workflow.newActivityStub(SampleActivities.class);
     private Promise<Void> activitiesPromise;
+    Promise<Void> timerPromise;
     private SampleSaga saga;
 
     @Override
@@ -28,14 +29,21 @@ public class SampleWorkflowImpl implements SampleWorkflow {
                 input, logger);
 
         // Timer and activities promises
-        Promise<Void> timerPromise = Workflow.newTimer(Duration.ofSeconds(input.getTimer()));
+//        Promise<Void> timerPromise = Workflow.newTimer(Duration.ofSeconds(input.getTimer()));
+        // Create cancellation scope for timer
+        CancellationScope timerCancellationScope =
+                Workflow.newCancellationScope(
+                        () -> {
+                            timerPromise = Workflow.newTimer(Duration.ofSeconds(input.getTimer()));
+                        });
+        timerCancellationScope.run();
         // Create cancellation scope for activities
-        CancellationScope scope =
+        CancellationScope activityCancellationScope =
                 Workflow.newCancellationScope(
                         () -> {
                             activitiesPromise = Async.procedure(this::runActivities);
                         });
-        scope.run();
+        activityCancellationScope.run();
 
         // Wait for timer and activities promises, whichever completes first
         try {
@@ -49,12 +57,14 @@ public class SampleWorkflowImpl implements SampleWorkflow {
 
         // if our timer promise completed but activities are still running
         if (timerPromise.isCompleted() && !activitiesPromise.isCompleted()) {
-            scope.cancel("timer fired...");
+            activityCancellationScope.cancel("timer fired");
             // run compensation in async child wf
             saga.compensate();
             // fail execution
             throw ApplicationFailure.newFailure("failing execution", "TimerFired");
         } else {
+            // cancel timer to avoid TimerFired event being buffered when we try to complete execution
+            timerCancellationScope.cancel("activities completed/failed before timer");
             if (activitiesPromise.getFailure() != null) {
                 // run compensation in async child wf
                 saga.compensate();
