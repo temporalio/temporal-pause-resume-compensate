@@ -27,9 +27,7 @@ public class SampleWorkflowImpl implements SampleWorkflow {
         saga = new SampleSaga(
             new SampleSaga.Options.Builder().setChildId("cleanupsagachild").setUseParentWorkflowIdAsPrefix(true).build(),
                 input, logger);
-
-        // Timer and activities promises
-//        Promise<Void> timerPromise = Workflow.newTimer(Duration.ofSeconds(input.getTimer()));
+        
         // Create cancellation scope for timer
         CancellationScope timerCancellationScope =
                 Workflow.newCancellationScope(
@@ -63,7 +61,8 @@ public class SampleWorkflowImpl implements SampleWorkflow {
             // fail execution
             throw ApplicationFailure.newFailure("failing execution", "TimerFired");
         } else {
-            // cancel timer to avoid TimerFired event being buffered when we try to complete execution
+            // cancel timer so TimerFired does not get delivered to our worker
+            // in case timer does fire before or at the time we want to complete execution
             timerCancellationScope.cancel("activities completed/failed before timer");
             if (activitiesPromise.getFailure() != null) {
                 // run compensation in async child wf
