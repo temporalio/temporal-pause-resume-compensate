@@ -2,6 +2,7 @@ package io.temporal.sample.activities;
 
 import io.temporal.sample.model.SampleInput;
 import io.temporal.sample.model.SampleResult;
+import io.temporal.sample.model.WorkflowContext;
 import io.temporal.spring.boot.ActivityImpl;
 import org.springframework.stereotype.Component;
 
@@ -11,33 +12,33 @@ import java.util.concurrent.TimeUnit;
 @ActivityImpl(taskQueues = "sagacleanupqueue")
 public class SampleCompensationActivitiesImpl implements SampleCompensationActivities {
     @Override
-    public SampleResult compensateOne(SampleInput input) {
+    public WorkflowContext compensateOne(WorkflowContext input) {
         sleep(1);
-        return new SampleResult("Compensate activity one done...");
+       return new WorkflowContext("compensateOneDone");
     }
 
     @Override
-    public SampleResult compensateTwo(SampleInput input) {
+    public WorkflowContext compensateTwo(WorkflowContext input) {
         sleep(1);
-        return new SampleResult("Compensate activity two done...");
+        return new WorkflowContext("compensateTwoDone");
     }
 
     @Override
-    public SampleResult compensateThree(SampleInput input) {
+    public WorkflowContext compensateThree(WorkflowContext input) {
         sleep(1);
-        return new SampleResult("Compensate activity three done...");
+        return new WorkflowContext("compensateThreeDone");
     }
 
     @Override
-    public SampleResult compensateFour(SampleInput input) {
+    public WorkflowContext compensateFour(WorkflowContext input) {
         sleep(1);
-        return new SampleResult("Compensate activity four done...");
+        return new WorkflowContext("compensateFourDone");
     }
 
     @Override
-    public SampleResult compensateAlways(SampleInput input) {
+    public WorkflowContext compensateAlways(WorkflowContext input) {
         sleep(1);
-        return new SampleResult("Compensate compensateAlways one done...");
+        return new WorkflowContext("compensateFiveDone");
     }
 
     private void sleep(int seconds) {

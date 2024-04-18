@@ -117,8 +117,6 @@ public class Saga {
                     } catch (ActivityFailure af) {
                         logger.error("Compensation activity failure: " + af.getMessage());
                     }
-
-
                 }
             }
         }
