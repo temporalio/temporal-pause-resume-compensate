@@ -3,9 +3,9 @@ package io.temporal.sample.workflows;
 import io.temporal.failure.ActivityFailure;
 import io.temporal.failure.ApplicationFailure;
 import io.temporal.sample.activities.SampleActivities;
-import io.temporal.sample.comp.SampleSaga;
 import io.temporal.sample.model.SampleInput;
 import io.temporal.sample.model.SampleResult;
+import io.temporal.sample.model.WorkflowContext;
 import io.temporal.spring.boot.WorkflowImpl;
 import io.temporal.workflow.*;
 import org.slf4j.Logger;
@@ -19,15 +19,13 @@ public class SampleWorkflowImpl implements SampleWorkflow {
     private final SampleActivities activities = Workflow.newActivityStub(SampleActivities.class);
     private Promise<Void> activitiesPromise;
     Promise<Void> timerPromise;
-    private SampleSaga saga;
+    private static io.temporal.sample.comp.Saga saga;
 
     @Override
     public SampleResult run(SampleInput input) {
         // Saga
-        saga = new SampleSaga(
-            new SampleSaga.Options.Builder().setChildId("cleanupsagachild").setUseParentWorkflowIdAsPrefix(true).build(),
-                input, logger);
-        
+        saga = new io.temporal.sample.comp.Saga("cleanupsagachild", "sagacleanupqueue");
+
         // Create cancellation scope for timer
         CancellationScope timerCancellationScope =
                 Workflow.newCancellationScope(
@@ -74,18 +72,17 @@ public class SampleWorkflowImpl implements SampleWorkflow {
     }
 
     private void runActivities() {
-        saga.addCompensation(new SampleSaga.CompensationInfo.Builder()
-                .setActivityType("CompensateOne").build());
+
+        saga.addCompensation("CompensateOne", new WorkflowContext("CompensateOne"));
         activities.one();
-        saga.addCompensation(new SampleSaga.CompensationInfo.Builder()
-                .setActivityType("CompensateTwo").build());
+
+        saga.addCompensation("CompensateTwo", new WorkflowContext("CompensateTwo"));
         activities.two();
-        saga.addCompensation(new SampleSaga.CompensationInfo.Builder()
-                .setActivityType("CompensateThree").build());
+
+        saga.addCompensation("CompensateThree", new WorkflowContext("CompensateThree"));
         activities.three();
 
-        saga.addCompensation(new SampleSaga.CompensationInfo.Builder()
-                .setActivityType("CompensateFour").build());
+        saga.addCompensation("CompensateFour", new WorkflowContext("CompensateFour"));
         activities.four();
     }
 
