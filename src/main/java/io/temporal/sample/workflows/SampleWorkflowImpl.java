@@ -27,48 +27,51 @@ public class SampleWorkflowImpl implements SampleWorkflow {
         saga = new io.temporal.sample.comp.Saga("cleanupsagachild", "sagacleanupqueue");
 
         // Create cancellation scope for timer
-        CancellationScope timerCancellationScope =
-                Workflow.newCancellationScope(
-                        () -> {
-                            timerPromise = Workflow.newTimer(Duration.ofSeconds(input.getTimer()));
-                        });
-        timerCancellationScope.run();
-        // Create cancellation scope for activities
-        CancellationScope activityCancellationScope =
-                Workflow.newCancellationScope(
-                        () -> {
-                            activitiesPromise = Async.procedure(this::runActivities);
-                        });
-        activityCancellationScope.run();
+//        CancellationScope timerCancellationScope =
+//                Workflow.newCancellationScope(
+//                        () -> {
+//                            timerPromise = Workflow.newTimer(Duration.ofSeconds(input.getTimer()));
+//                        });
+//        timerCancellationScope.run();
+//        // Create cancellation scope for activities
+//        CancellationScope activityCancellationScope =
+//                Workflow.newCancellationScope(
+//                        () -> {
+//                            activitiesPromise = Async.procedure(this::runActivities);
+//                        });
+//        activityCancellationScope.run();
 
         // Wait for timer and activities promises, whichever completes first
         try {
-            Promise.anyOf(timerPromise, activitiesPromise).get();
+            runActivities();
         } catch (ActivityFailure e) {
             // We need to handler ActivityFailure here as it will be delivered to workflow code in this .get() call
             // However we just log it as will handle later with activitiesPromise.getFailure
             // If we dont handle it here we would fail execution
             logger.warn("Activity failure: " + e.getMessage());
-        }
-
-        // if our timer promise completed but activities are still running
-        if (timerPromise.isCompleted() && !activitiesPromise.isCompleted()) {
-            activityCancellationScope.cancel("timer fired");
-            // run compensation in async child wf
             saga.compensate();
-            // fail execution
-            throw ApplicationFailure.newFailure("failing execution", "TimerFired");
-        } else {
-            // cancel timer so TimerFired does not get delivered to our worker
-            // in case timer does fire before or at the time we want to complete execution
-            timerCancellationScope.cancel("activities completed/failed before timer");
-            if (activitiesPromise.getFailure() != null) {
-                // run compensation in async child wf
-                saga.compensate();
-                return new SampleResult("Parent wf: result, compensation initiated...");
-            }
-            return new SampleResult("Parent wf: result, no compensation initiated....");
+            throw ApplicationFailure.newFailure("failing execution after saga", "Saga...");
         }
+        return new SampleResult("Parent wf: result, no compensation initiated....");
+
+//        // if our timer promise completed but activities are still running
+//        if (timerPromise.isCompleted() && !activitiesPromise.isCompleted()) {
+//            activityCancellationScope.cancel("timer fired");
+//            // run compensation in async child wf
+//            saga.compensate();
+//            // fail execution
+//            throw ApplicationFailure.newFailure("failing execution", "TimerFired");
+//        } else {
+//            // cancel timer so TimerFired does not get delivered to our worker
+//            // in case timer does fire before or at the time we want to complete execution
+//            timerCancellationScope.cancel("activities completed/failed before timer");
+//            if (activitiesPromise.getFailure() != null) {
+//                // run compensation in async child wf
+//                saga.compensate();
+//                return new SampleResult("Parent wf: result, compensation initiated...");
+//            }
+//            return new SampleResult("Parent wf: result, no compensation initiated....");
+//        }
     }
 
     private void runActivities() {

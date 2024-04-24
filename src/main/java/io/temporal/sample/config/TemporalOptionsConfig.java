@@ -2,9 +2,11 @@ package io.temporal.sample.config;
 
 import io.temporal.activity.ActivityCancellationType;
 import io.temporal.activity.ActivityOptions;
+import io.temporal.sample.interceptors.PauseResumeWorkerInterceptor;
 import io.temporal.serviceclient.WorkflowServiceStubsOptions;
 import io.temporal.spring.boot.TemporalOptionsCustomizer;
 import io.temporal.spring.boot.WorkerOptionsCustomizer;
+import io.temporal.worker.WorkerFactoryOptions;
 import io.temporal.worker.WorkerOptions;
 import io.temporal.worker.WorkflowImplementationOptions;
 import org.springframework.context.annotation.Bean;
@@ -41,6 +43,19 @@ public class TemporalOptionsConfig {
             public WorkflowServiceStubsOptions.Builder customize(
                     @Nonnull WorkflowServiceStubsOptions.Builder optionsBuilder) {
                 optionsBuilder.setRpcLongPollTimeout(Duration.ofSeconds(20));
+                return optionsBuilder;
+            }
+        };
+    }
+
+    @Bean
+    public TemporalOptionsCustomizer<WorkerFactoryOptions.Builder> customWorkerFactoryOptions() {
+        return new TemporalOptionsCustomizer<WorkerFactoryOptions.Builder>() {
+            @Nonnull
+            @Override
+            public WorkerFactoryOptions.Builder customize(
+                    @Nonnull WorkerFactoryOptions.Builder optionsBuilder) {
+                optionsBuilder.setWorkerInterceptors(new PauseResumeWorkerInterceptor());
                 return optionsBuilder;
             }
         };

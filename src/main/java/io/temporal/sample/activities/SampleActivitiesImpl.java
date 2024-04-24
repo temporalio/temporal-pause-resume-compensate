@@ -42,7 +42,6 @@ public class SampleActivitiesImpl implements SampleActivities {
                 // Perform the heartbeat. Used to notify the workflow that activity execution is alive
                 context.heartbeat(i);
             } catch (ActivityCompletionException e) {
-                System.out.println("******** ACTIVITY FOUR CANCELING");
                 throw e;
             }
         }
