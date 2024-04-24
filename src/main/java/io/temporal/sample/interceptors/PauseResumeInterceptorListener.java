@@ -4,7 +4,7 @@ import io.temporal.workflow.SignalMethod;
 
 public interface PauseResumeInterceptorListener {
     @SignalMethod
-    void fail();
+    void complete();
 
     @SignalMethod
     void resume();

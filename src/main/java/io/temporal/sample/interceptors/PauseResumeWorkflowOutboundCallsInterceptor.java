@@ -2,16 +2,15 @@ package io.temporal.sample.interceptors;
 
 import io.temporal.common.interceptors.WorkflowOutboundCallsInterceptor;
 import io.temporal.common.interceptors.WorkflowOutboundCallsInterceptorBase;
-import io.temporal.failure.ActivityFailure;
-import io.temporal.failure.ApplicationFailure;
 import io.temporal.workflow.CompletablePromise;
 import io.temporal.workflow.Workflow;
 
 public class PauseResumeWorkflowOutboundCallsInterceptor extends WorkflowOutboundCallsInterceptorBase {
     private ActivityRetryState pendingActivity;
+
     private enum Action {
         RETRY,
-        FAIL
+        COMPLETE
     }
 
     public PauseResumeWorkflowOutboundCallsInterceptor(WorkflowOutboundCallsInterceptor next) {
@@ -20,7 +19,7 @@ public class PauseResumeWorkflowOutboundCallsInterceptor extends WorkflowOutboun
                 new PauseResumeInterceptorListener() {
                     @Override
                     public void resume() {
-                        if(pendingActivity != null) {
+                        if (pendingActivity != null) {
                             pendingActivity.retry();
                         } else {
 //                            System.out.println("***** CANNOT RESUME NOTHING FAILED...");
@@ -28,9 +27,9 @@ public class PauseResumeWorkflowOutboundCallsInterceptor extends WorkflowOutboun
                     }
 
                     @Override
-                    public void fail() {
-                        if(pendingActivity != null) {
-                            pendingActivity.fail();
+                    public void complete() {
+                        if (pendingActivity != null) {
+                            pendingActivity.complete();
                         } else {
 //                            System.out.println("***** CANNOT FAIL NOTHING FAILED...");
                         }
@@ -41,9 +40,9 @@ public class PauseResumeWorkflowOutboundCallsInterceptor extends WorkflowOutboun
     @Override
     public <R> ActivityOutput<R> executeActivity(ActivityInput<R> input) {
         ActivityOutput<R> result = super.executeActivity(input);
-        if(result.getResult().getFailure() != null) {
+        if (result.getResult().getFailure() != null) {
             pendingActivity = new ActivityRetryState<>(input);
-            return pendingActivity.execute(result.getActivityId());
+            return pendingActivity.execute(result.getActivityId(), result.getResult().getFailure());
         } else {
             return result;
         }
@@ -59,17 +58,17 @@ public class PauseResumeWorkflowOutboundCallsInterceptor extends WorkflowOutboun
             this.input = input;
         }
 
-        ActivityOutput<R> execute(String activityId) {
+        ActivityOutput<R> execute(String activityId, RuntimeException activityFailure) {
             action = Workflow.newPromise();
             action.thenApply(
                     a -> {
-                        if (a == Action.FAIL) {
-                            // simulate failure of activity result
+                        if (a == Action.COMPLETE) {
+                            // return the original activity failure since we dont want to try it again
                             CompletablePromise<R> asyncResult = Workflow.newPromise();
-                            asyncResult.completeExceptionally(ApplicationFailure.newNonRetryableFailure("Simulated Failure...", "sim failure..."));
-                            result =  new ActivityOutput<>(activityId, asyncResult);
+                            asyncResult.completeExceptionally(activityFailure);
+                            result = new ActivityOutput<>(activityId, asyncResult);
                         } else {
-                            result =  PauseResumeWorkflowOutboundCallsInterceptor.super.executeActivity(input);
+                            result = PauseResumeWorkflowOutboundCallsInterceptor.super.executeActivity(input);
                         }
                         return null;
                     });
@@ -77,11 +76,11 @@ public class PauseResumeWorkflowOutboundCallsInterceptor extends WorkflowOutboun
             return result;
         }
 
-        public void fail() {
+        public void complete() {
             if (action == null) {
                 return;
             }
-            action.complete(Action.FAIL);
+            action.complete(Action.COMPLETE);
         }
 
         public void retry() {
