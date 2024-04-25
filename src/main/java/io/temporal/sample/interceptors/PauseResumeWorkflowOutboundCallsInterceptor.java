@@ -1,6 +1,7 @@
 package io.temporal.sample.interceptors;
 
 import com.google.common.base.Throwables;
+import io.temporal.common.SearchAttributeKey;
 import io.temporal.common.interceptors.WorkflowOutboundCallsInterceptor;
 import io.temporal.common.interceptors.WorkflowOutboundCallsInterceptorBase;
 import io.temporal.workflow.CompletablePromise;
@@ -10,6 +11,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PauseResumeWorkflowOutboundCallsInterceptor extends WorkflowOutboundCallsInterceptorBase {
+
+    private final SearchAttributeKey<Boolean> PAUSE_SA =
+            SearchAttributeKey.forBoolean("pause");
+
     private enum Action {
         RETRY,
         FAIL
@@ -42,16 +47,22 @@ public class PauseResumeWorkflowOutboundCallsInterceptor extends WorkflowOutboun
                             (r, failure) -> {
                                 // No failure complete
                                 if (failure == null) {
+                                    Workflow.upsertTypedSearchAttributes(
+                                            PAUSE_SA.valueUnset(), PAUSE_SA.valueSet(false));
                                     pendingActivities.remove(this);
                                     asyncResult.complete(r);
                                     return null;
                                 }
                                 // Asynchronously executes requested action when signal is received.
+                                Workflow.upsertTypedSearchAttributes(
+                                        PAUSE_SA.valueUnset(), PAUSE_SA.valueSet(true));
                                 lastFailure = failure;
                                 action = Workflow.newPromise();
                                 return action.thenApply(
                                         a -> {
                                             if (a == Action.FAIL) {
+                                                Workflow.upsertTypedSearchAttributes(
+                                                        PAUSE_SA.valueUnset(), PAUSE_SA.valueSet(false));
                                                 asyncResult.completeExceptionally(failure);
                                             } else {
                                                 // Retries recursively.

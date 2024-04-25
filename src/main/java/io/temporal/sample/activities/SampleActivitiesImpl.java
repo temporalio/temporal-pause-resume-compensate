@@ -35,16 +35,17 @@ public class SampleActivitiesImpl implements SampleActivities {
 
     @Override
     public SampleResult four() {
-        ActivityExecutionContext context = Activity.getExecutionContext();
-        for (int i = 0; i < 6; i++) {
-            sleep(1);
-            try {
-                // Perform the heartbeat. Used to notify the workflow that activity execution is alive
-                context.heartbeat(i);
-            } catch (ActivityCompletionException e) {
-                throw e;
-            }
-        }
+//        ActivityExecutionContext context = Activity.getExecutionContext();
+//        for (int i = 0; i < 6; i++) {
+//            sleep(1);
+//            try {
+//                // Perform the heartbeat. Used to notify the workflow that activity execution is alive
+//                context.heartbeat(i);
+//            } catch (ActivityCompletionException e) {
+//                throw e;
+//            }
+//        }
+        sleep(1);
         return new SampleResult("Activity four done...");
     }
 

@@ -12,14 +12,19 @@
                 <h5>Say hello to:</h5>
                 <form action="/run", id="sampleform">
                     <p>Timer Duration (s) <input type="text" name="timer"/></p>
-                    <p><input type="submit" value="Run Workflow" class="btn btn-primary" />
-                        <input type="reset" value="Reset Form" class="btn btn-secondary" />
+                    <p><input type="submit" value="Start Workflows" class="btn btn-primary" />
+                </form>
+                <form action="/retryall", id="sampleform2">
+                    <p><input type="submit" value="Retry All Paused Workflows" class="btn btn-primary" />
+                </form>
+                <form action="/failall", id="sampleform3">
+                    <p><input type="submit" value="Fail All Paused Workflows" class="btn btn-primary" />
                 </form>
             </div>
         </div>
         <div style="width: 18rem;">
             <div>
-                <h5 class="card-title">Workflow result:</h5>
+                <h5 class="card-title">Messages:</h5>
                 <div id="result"></div>
             </div>
         </div>
@@ -43,6 +48,50 @@
             'contentType': 'application/json',
             'data':JSON.stringify({
                 "timer": timer,
+            }),
+            success: function(response) {
+                $( "#result" ).empty().append( response.message );
+            },
+            error: function(XMLHttpRequest, textStatus, errorThrown) {
+                alert("Status: " + textStatus); alert("Error: " + errorThrown);
+            }
+        });
+    });
+
+    $("#sampleform2").submit(function( event ) {
+        event.preventDefault();
+
+        var $form = $( this )
+        var url = $form.attr( "action" );
+
+        $.ajax({
+            'url': url,
+            'method':'POST',
+            'dataType': 'json',
+            'contentType': 'application/json',
+            'data':JSON.stringify({
+            }),
+            success: function(response) {
+                $( "#result" ).empty().append( response.message );
+            },
+            error: function(XMLHttpRequest, textStatus, errorThrown) {
+                alert("Status: " + textStatus); alert("Error: " + errorThrown);
+            }
+        });
+    });
+
+    $("#sampleform3").submit(function( event ) {
+        event.preventDefault();
+
+        var $form = $( this )
+        var url = $form.attr( "action" );
+
+        $.ajax({
+            'url': url,
+            'method':'POST',
+            'dataType': 'json',
+            'contentType': 'application/json',
+            'data':JSON.stringify({
             }),
             success: function(response) {
                 $( "#result" ).empty().append( response.message );
