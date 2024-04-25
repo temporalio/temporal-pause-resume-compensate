@@ -1,11 +1,15 @@
 package io.temporal.sample.interceptors;
 
+import io.temporal.workflow.QueryMethod;
 import io.temporal.workflow.SignalMethod;
 
 public interface PauseResumeInterceptorListener {
     @SignalMethod
-    void complete();
+    void retry();
 
     @SignalMethod
-    void resume();
+    void fail();
+
+    @QueryMethod
+    String getPendingActivitiesStatus();
 }

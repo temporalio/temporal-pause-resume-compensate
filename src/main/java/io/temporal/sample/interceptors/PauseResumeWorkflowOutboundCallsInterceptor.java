@@ -1,86 +1,66 @@
 package io.temporal.sample.interceptors;
 
+import com.google.common.base.Throwables;
 import io.temporal.common.interceptors.WorkflowOutboundCallsInterceptor;
 import io.temporal.common.interceptors.WorkflowOutboundCallsInterceptorBase;
 import io.temporal.workflow.CompletablePromise;
 import io.temporal.workflow.Workflow;
 
-public class PauseResumeWorkflowOutboundCallsInterceptor extends WorkflowOutboundCallsInterceptorBase {
-    private ActivityRetryState pendingActivity;
+import java.util.ArrayList;
+import java.util.List;
 
+public class PauseResumeWorkflowOutboundCallsInterceptor extends WorkflowOutboundCallsInterceptorBase {
     private enum Action {
         RETRY,
-        COMPLETE
-    }
-
-    public PauseResumeWorkflowOutboundCallsInterceptor(WorkflowOutboundCallsInterceptor next) {
-        super(next);
-        Workflow.registerListener(
-                new PauseResumeInterceptorListener() {
-                    @Override
-                    public void resume() {
-                        if (pendingActivity != null) {
-                            pendingActivity.retry();
-                        } else {
-//                            System.out.println("***** CANNOT RESUME NOTHING FAILED...");
-                        }
-                    }
-
-                    @Override
-                    public void complete() {
-                        if (pendingActivity != null) {
-                            pendingActivity.complete();
-                        } else {
-//                            System.out.println("***** CANNOT FAIL NOTHING FAILED...");
-                        }
-                    }
-                });
-    }
-
-    @Override
-    public <R> ActivityOutput<R> executeActivity(ActivityInput<R> input) {
-        ActivityOutput<R> result = super.executeActivity(input);
-        if (result.getResult().getFailure() != null) {
-            pendingActivity = new ActivityRetryState<>(input);
-            return pendingActivity.execute(result.getActivityId(), result.getResult().getFailure());
-        } else {
-            return result;
-        }
+        FAIL
     }
 
     private class ActivityRetryState<R> {
         private final ActivityInput<R> input;
         private final CompletablePromise<R> asyncResult = Workflow.newPromise();
         private CompletablePromise<Action> action;
-        private ActivityOutput<R> result;
+        private Exception lastFailure;
+        private int attempt;
 
         private ActivityRetryState(ActivityInput<R> input) {
             this.input = input;
         }
 
-        ActivityOutput<R> execute(String activityId, RuntimeException activityFailure) {
-            action = Workflow.newPromise();
-            action.thenApply(
-                    a -> {
-                        if (a == Action.COMPLETE) {
-                            // return the original activity failure since we dont want to try it again
-                            CompletablePromise<R> asyncResult = Workflow.newPromise();
-                            asyncResult.completeExceptionally(activityFailure);
-                            result = new ActivityOutput<>(activityId, asyncResult);
-                        } else {
-                            result = PauseResumeWorkflowOutboundCallsInterceptor.super.executeActivity(input);
-                        }
-                        return null;
-                    });
-            action.get();
-            return result;
+        ActivityOutput<R> execute() {
+            return executeWithAsyncRetry();
         }
 
-        public void complete() {
-            if (action == null) {
-                return;
-            }
-            action.complete(Action.COMPLETE);
+        private ActivityOutput<R> executeWithAsyncRetry() {
+            attempt++;
+            lastFailure = null;
+            action = null;
+            ActivityOutput<R> result =
+                    PauseResumeWorkflowOutboundCallsInterceptor.super.executeActivity(input);
+            result
+                    .getResult()
+                    .handle(
+                            (r, failure) -> {
+                                // No failure complete
+                                if (failure == null) {
+                                    pendingActivities.remove(this);
+                                    asyncResult.complete(r);
+                                    return null;
+                                }
+                                // Asynchronously executes requested action when signal is received.
+                                lastFailure = failure;
+                                action = Workflow.newPromise();
+                                return action.thenApply(
+                                        a -> {
+                                            if (a == Action.FAIL) {
+                                                asyncResult.completeExceptionally(failure);
+                                            } else {
+                                                // Retries recursively.
+                                                executeWithAsyncRetry();
+                                            }
+                                            return null;
+                                        });
+                            });
+            return new ActivityOutput<>(result.getActivityId(), asyncResult);
         }
 
         public void retry() {
@@ -89,5 +69,71 @@ public class PauseResumeWorkflowOutboundCallsInterceptor extends WorkflowOutboun
             }
             action.complete(Action.RETRY);
         }
+
+        public void fail() {
+            if (action == null) {
+                return;
+            }
+            action.complete(Action.FAIL);
+        }
+
+        public String getStatus() {
+            String activityName = input.getActivityName();
+            if (lastFailure == null) {
+                return "Executing activity \"" + activityName + "\". Attempt=" + attempt;
+            }
+            if (!action.isCompleted()) {
+                return "Last \""
+                        + activityName
+                        + "\" activity failure:\n"
+                        + Throwables.getStackTraceAsString(lastFailure)
+                        + "\n\nretry or fail ?";
+            }
+            return (action.get() == Action.RETRY ? "Going to retry" : "Going to fail")
+                    + " activity \""
+                    + activityName
+                    + "\"";
+        }
+    }
+
+    private final List<ActivityRetryState<?>> pendingActivities = new ArrayList<>();
+
+    public PauseResumeWorkflowOutboundCallsInterceptor(WorkflowOutboundCallsInterceptor next) {
+        super(next);
+        Workflow.registerListener(
+                new PauseResumeInterceptorListener() {
+                    @Override
+                    public void retry() {
+                        for (ActivityRetryState<?> pending : pendingActivities) {
+                            pending.retry();
+                        }
+                    }
+
+                    @Override
+                    public void fail() {
+                        for (ActivityRetryState<?> pending : pendingActivities) {
+                            pending.fail();
+                        }
+                    }
+
+                    @Override
+                    public String getPendingActivitiesStatus() {
+                        StringBuilder result = new StringBuilder();
+                        for (ActivityRetryState<?> pending : pendingActivities) {
+                            if (result.length() > 0) {
+                                result.append('\n');
+                            }
+                            result.append(pending.getStatus());
+                        }
+                        return result.toString();
+                    }
+                });
+    }
+
+    @Override
+    public <R> ActivityOutput<R> executeActivity(ActivityInput<R> input) {
+        ActivityRetryState<R> retryState = new ActivityRetryState<R>(input);
+        pendingActivities.add(retryState);
+        return retryState.execute();
     }
 }
