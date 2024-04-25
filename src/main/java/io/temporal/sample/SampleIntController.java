@@ -91,7 +91,7 @@ public class SampleIntController {
                                 .setVisibilityQuery("pause=true")
                                 .setReason("Failing all paused executions")
                                 .setSignalOperation(BatchOperationSignal.newBuilder()
-                                        .setSignal("retry")
+                                        .setSignal("fail")
                                         .setIdentity(client.getOptions().getIdentity())
                                         .build())
                                 .build());

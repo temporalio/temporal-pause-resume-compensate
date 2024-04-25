@@ -11,7 +11,6 @@
                 <br/><br/><br/>
                 <h5>Say hello to:</h5>
                 <form action="/run", id="sampleform">
-                    <p>Timer Duration (s) <input type="text" name="timer"/></p>
                     <p><input type="submit" value="Start Workflows" class="btn btn-primary" />
                 </form>
                 <form action="/retryall", id="sampleform2">
@@ -38,7 +37,6 @@
         $( "#result" ).empty().append( loader_img );
 
         var $form = $( this ),
-            timer = $form.find( "input[name='timer']" ).val(),
             url = $form.attr( "action" );
 
         $.ajax({
@@ -47,7 +45,7 @@
             'dataType': 'json',
             'contentType': 'application/json',
             'data':JSON.stringify({
-                "timer": timer,
+                "timer": 10,
             }),
             success: function(response) {
                 $( "#result" ).empty().append( response.message );
