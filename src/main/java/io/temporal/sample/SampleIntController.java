@@ -49,7 +49,7 @@ public class SampleIntController {
             produces = {MediaType.APPLICATION_JSON_VALUE})
     ResponseEntity sampleInt(@RequestBody SampleInput input) {
         // start 10 workflows
-        for(int i=0;i < 10; i++) {
+        for (int i = 0; i < 10; i++) {
             SampleWorkflow workflow =
                     client.newWorkflowStub(SampleWorkflow.class,
                             WorkflowOptions.newBuilder()
@@ -109,13 +109,13 @@ public class SampleIntController {
         return new ResponseEntity<>(new SampleResult("Started batch operation to fail all paused executions: " + jobId), HttpStatus.OK);
     }
 
-    @PostMapping(value="/listbatchoperations")
+    @PostMapping(value = "/listbatchoperations")
     ResponseEntity listBatches() {
-        List<BatchOperationInfo> info =  getBatchInfo(client, null, null);
-        if(info != null) {
+        List<BatchOperationInfo> info = getBatchInfo(client, null, null);
+        if (info != null) {
             String result = Joiner.on(",").join(info.stream()
-                    .map( in -> in.getJobId() )
-                    .collect( Collectors.toList()));
+                    .map(in -> in.getJobId())
+                    .collect(Collectors.toList()));
 
             return new ResponseEntity<>(new SampleResult("Batch operation ids: " + result), HttpStatus.OK);
         } else {
@@ -123,11 +123,11 @@ public class SampleIntController {
         }
     }
 
-    @PostMapping(value="/stopbatchoperations")
+    @PostMapping(value = "/stopbatchoperations")
     ResponseEntity stopbatches() {
-        List<BatchOperationInfo> info =  getBatchInfo(client, null, null);
-        if(info != null) {
-            for(BatchOperationInfo in : info) {
+        List<BatchOperationInfo> info = getBatchInfo(client, null, null);
+        if (info != null) {
+            for (BatchOperationInfo in : info) {
                 client.getWorkflowServiceStubs().blockingStub().stopBatchOperation(
                         StopBatchOperationRequest.newBuilder()
                                 .setNamespace(client.getOptions().getNamespace())
@@ -143,14 +143,14 @@ public class SampleIntController {
     }
 
     private List<BatchOperationInfo> getBatchInfo(WorkflowClient client, ByteString nextPageToken, List<BatchOperationInfo> info) {
-        if(info == null) {
+        if (info == null) {
             info = new ArrayList<>();
         }
         ListBatchOperationsResponse res = client.getWorkflowServiceStubs().blockingStub().listBatchOperations(ListBatchOperationsRequest.newBuilder()
                 .setNamespace(client.getOptions().getNamespace())
                 .build());
         info.addAll(res.getOperationInfoList());
-        if(res.getNextPageToken() == null) {
+        if (res.getNextPageToken() == null) {
             return info;
         } else {
             return getBatchInfo(client, res.getNextPageToken(), info);
