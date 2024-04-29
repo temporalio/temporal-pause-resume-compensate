@@ -7,6 +7,7 @@ import io.temporal.api.batch.v1.BatchOperationSignal;
 import io.temporal.api.workflowservice.v1.ListBatchOperationsRequest;
 import io.temporal.api.workflowservice.v1.ListBatchOperationsResponse;
 import io.temporal.api.workflowservice.v1.StartBatchOperationRequest;
+import io.temporal.api.workflowservice.v1.StopBatchOperationRequest;
 import io.temporal.client.WorkflowClient;
 import io.temporal.client.WorkflowFailedException;
 import io.temporal.client.WorkflowOptions;
@@ -119,6 +120,21 @@ public class SampleIntController {
             return new ResponseEntity<>(new SampleResult("Batch operation ids: " + result), HttpStatus.OK);
         } else {
             return new ResponseEntity<>(new SampleResult("Not batch operations running"), HttpStatus.OK);
+        }
+    }
+
+    @PostMapping(value="stopbatches")
+    ResponseEntity stopbatches() {
+        List<BatchOperationInfo> info =  getBatchInfo(client, null, null);
+        for(BatchOperationInfo in : info) {
+            client.getWorkflowServiceStubs().blockingStub().stopBatchOperation(
+                    StopBatchOperationRequest.newBuilder()
+                            .setNamespace(client.getOptions().getNamespace())
+                            .setReason("stopping batch")
+                            .setIdentity(client.getOptions().getIdentity())
+                            .setJobId(in.getJobId())
+                            .build()
+            );
         }
     }
 
