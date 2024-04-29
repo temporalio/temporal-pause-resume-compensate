@@ -123,7 +123,7 @@ public class SampleIntController {
         }
     }
 
-    @PostMapping(value="stopbatches")
+    @PostMapping(value="/stopbatches")
     ResponseEntity stopbatches() {
         List<BatchOperationInfo> info =  getBatchInfo(client, null, null);
         for(BatchOperationInfo in : info) {
