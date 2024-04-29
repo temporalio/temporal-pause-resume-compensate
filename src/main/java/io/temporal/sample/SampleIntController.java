@@ -126,16 +126,20 @@ public class SampleIntController {
     @PostMapping(value="/stopbatches")
     ResponseEntity stopbatches() {
         List<BatchOperationInfo> info =  getBatchInfo(client, null, null);
-        for(BatchOperationInfo in : info) {
-            client.getWorkflowServiceStubs().blockingStub().stopBatchOperation(
-                    StopBatchOperationRequest.newBuilder()
-                            .setNamespace(client.getOptions().getNamespace())
-                            .setReason("stopping batch")
-                            .setIdentity(client.getOptions().getIdentity())
-                            .setJobId(in.getJobId())
-                            .build()
-            );
+        if(info != null) {
+            for(BatchOperationInfo in : info) {
+                client.getWorkflowServiceStubs().blockingStub().stopBatchOperation(
+                        StopBatchOperationRequest.newBuilder()
+                                .setNamespace(client.getOptions().getNamespace())
+                                .setReason("stopping batch")
+                                .setIdentity(client.getOptions().getIdentity())
+                                .setJobId(in.getJobId())
+                                .build()
+                );
+            }
+            return new ResponseEntity<>(new SampleResult("Stopped all batches"), HttpStatus.OK);
         }
+        return new ResponseEntity<>(new SampleResult("No batches running, nothing to stop"), HttpStatus.OK);
     }
 
     private List<BatchOperationInfo> getBatchInfo(WorkflowClient client, ByteString nextPageToken, List<BatchOperationInfo> info) {
