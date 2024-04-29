@@ -19,6 +19,12 @@
                 <form action="/failall", id="sampleform3">
                     <p><input type="submit" value="Fail All Paused Workflows" class="btn btn-primary" />
                 </form>
+                <form action="/listbatchoperations", id="sampleform4">
+                    <p><input type="submit" value="List Batch Operations" class="btn btn-primary" />
+                </form>
+                <form action="/stopbatchoperations", id="sampleform5">
+                    <p><input type="submit" value="Stop Batch Operations" class="btn btn-primary" />
+                </form>
             </div>
         </div>
         <div style="width: 18rem;">
@@ -79,6 +85,50 @@
     });
 
     $("#sampleform3").submit(function( event ) {
+        event.preventDefault();
+
+        var $form = $( this )
+        var url = $form.attr( "action" );
+
+        $.ajax({
+            'url': url,
+            'method':'POST',
+            'dataType': 'json',
+            'contentType': 'application/json',
+            'data':JSON.stringify({
+            }),
+            success: function(response) {
+                $( "#result" ).empty().append( response.message );
+            },
+            error: function(XMLHttpRequest, textStatus, errorThrown) {
+                alert("Status: " + textStatus); alert("Error: " + errorThrown);
+            }
+        });
+    });
+
+    $("#sampleform4").submit(function( event ) {
+        event.preventDefault();
+
+        var $form = $( this )
+        var url = $form.attr( "action" );
+
+        $.ajax({
+            'url': url,
+            'method':'POST',
+            'dataType': 'json',
+            'contentType': 'application/json',
+            'data':JSON.stringify({
+            }),
+            success: function(response) {
+                $( "#result" ).empty().append( response.message );
+            },
+            error: function(XMLHttpRequest, textStatus, errorThrown) {
+                alert("Status: " + textStatus); alert("Error: " + errorThrown);
+            }
+        });
+    });
+
+    $("#sampleform5").submit(function( event ) {
         event.preventDefault();
 
         var $form = $( this )

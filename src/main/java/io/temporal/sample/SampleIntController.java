@@ -112,11 +112,11 @@ public class SampleIntController {
     @PostMapping(value = "/listbatchoperations")
     ResponseEntity listBatches() {
         List<BatchOperationInfo> info = getBatchInfo(client, null, null);
-        if (info != null) {
-            String result = Joiner.on(",").join(info.stream()
-                    .map(in -> in.getJobId())
-                    .collect(Collectors.toList()));
-
+        String result = "";
+        if (info != null && info.size() > 0) {
+            for(BatchOperationInfo in : info) {
+                result += "Status: " + in.getState() + " - ID: " + in.getJobId() + "\n\n";
+            }
             return new ResponseEntity<>(new SampleResult("Batch operation ids: " + result), HttpStatus.OK);
         } else {
             return new ResponseEntity<>(new SampleResult("Not batch operations running"), HttpStatus.OK);
@@ -128,14 +128,18 @@ public class SampleIntController {
         List<BatchOperationInfo> info = getBatchInfo(client, null, null);
         if (info != null) {
             for (BatchOperationInfo in : info) {
-                client.getWorkflowServiceStubs().blockingStub().stopBatchOperation(
-                        StopBatchOperationRequest.newBuilder()
-                                .setNamespace(client.getOptions().getNamespace())
-                                .setReason("stopping batch")
-                                .setIdentity(client.getOptions().getIdentity())
-                                .setJobId(in.getJobId())
-                                .build()
-                );
+                try {
+                    client.getWorkflowServiceStubs().blockingStub().stopBatchOperation(
+                            StopBatchOperationRequest.newBuilder()
+                                    .setNamespace(client.getOptions().getNamespace())
+                                    .setReason("stopping batch")
+                                    .setIdentity(client.getOptions().getIdentity())
+                                    .setJobId(in.getJobId())
+                                    .build()
+                    );
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
             return new ResponseEntity<>(new SampleResult("Stopped all batches"), HttpStatus.OK);
         }
@@ -150,10 +154,10 @@ public class SampleIntController {
                 .setNamespace(client.getOptions().getNamespace())
                 .build());
         info.addAll(res.getOperationInfoList());
-        if (res.getNextPageToken() == null) {
-            return info;
-        } else {
+        if (res.getNextPageToken() != null && res.getNextPageToken().size() > 0) {
             return getBatchInfo(client, res.getNextPageToken(), info);
+        } else {
+            return info;
         }
     }
 
