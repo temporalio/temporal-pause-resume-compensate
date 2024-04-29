@@ -1,6 +1,11 @@
 package io.temporal.sample;
 
+import com.google.common.base.Joiner;
+import com.google.protobuf.ByteString;
+import io.temporal.api.batch.v1.BatchOperationInfo;
 import io.temporal.api.batch.v1.BatchOperationSignal;
+import io.temporal.api.workflowservice.v1.ListBatchOperationsRequest;
+import io.temporal.api.workflowservice.v1.ListBatchOperationsResponse;
 import io.temporal.api.workflowservice.v1.StartBatchOperationRequest;
 import io.temporal.client.WorkflowClient;
 import io.temporal.client.WorkflowFailedException;
@@ -19,7 +24,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Controller
 public class SampleIntController {
@@ -62,13 +70,13 @@ public class SampleIntController {
 
     @PostMapping(value = "/retryall")
     ResponseEntity retryall() {
-
+        String jobId = UUID.randomUUID().toString();
         client.getWorkflowServiceStubs()
                 .blockingStub()
                 .startBatchOperation(
                         StartBatchOperationRequest.newBuilder()
                                 .setNamespace(client.getOptions().getNamespace())
-                                .setJobId(UUID.randomUUID().toString())
+                                .setJobId(jobId)
                                 .setVisibilityQuery("pause=true")
                                 .setReason("Retrying all paused executions")
                                 .setSignalOperation(BatchOperationSignal.newBuilder()
@@ -77,17 +85,18 @@ public class SampleIntController {
                                         .build())
                                 .build());
 
-        return new ResponseEntity<>(new SampleResult("Sent retry signal to all paused workflows"), HttpStatus.OK);
+        return new ResponseEntity<>(new SampleResult("Started batch operation to retry all paused executions: " + jobId), HttpStatus.OK);
     }
 
     @PostMapping(value = "/failall")
     ResponseEntity failall() {
+        String jobId = UUID.randomUUID().toString();
         client.getWorkflowServiceStubs()
                 .blockingStub()
                 .startBatchOperation(
                         StartBatchOperationRequest.newBuilder()
                                 .setNamespace(client.getOptions().getNamespace())
-                                .setJobId(UUID.randomUUID().toString())
+                                .setJobId(jobId)
                                 .setVisibilityQuery("pause=true")
                                 .setReason("Failing all paused executions")
                                 .setSignalOperation(BatchOperationSignal.newBuilder()
@@ -96,7 +105,37 @@ public class SampleIntController {
                                         .build())
                                 .build());
 
-        return new ResponseEntity<>(new SampleResult("Sent fail signal to all paused workflows"), HttpStatus.OK);
+        return new ResponseEntity<>(new SampleResult("Started batch operation to fail all paused executions: " + jobId), HttpStatus.OK);
     }
+
+    @PostMapping(value="/listbatches")
+    ResponseEntity listBatches() {
+        List<BatchOperationInfo> info =  getBatchInfo(client, null, null);
+        if(info != null) {
+            String result = Joiner.on(",").join(info.stream()
+                    .map( in -> in.getJobId() )
+                    .collect( Collectors.toList()));
+
+            return new ResponseEntity<>(new SampleResult("Batch operation ids: " + result), HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(new SampleResult("Not batch operations running"), HttpStatus.OK);
+        }
+    }
+
+    private List<BatchOperationInfo> getBatchInfo(WorkflowClient client, ByteString nextPageToken, List<BatchOperationInfo> info) {
+        if(info == null) {
+            info = new ArrayList<>();
+        }
+        ListBatchOperationsResponse res = client.getWorkflowServiceStubs().blockingStub().listBatchOperations(ListBatchOperationsRequest.newBuilder()
+                .setNamespace(client.getOptions().getNamespace())
+                .build());
+        info.addAll(res.getOperationInfoList());
+        if(res.getNextPageToken() == null) {
+            return info;
+        } else {
+            return getBatchInfo(client, res.getNextPageToken(), info);
+        }
+    }
+
 }
 
