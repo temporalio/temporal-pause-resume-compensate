@@ -109,7 +109,7 @@ public class SampleIntController {
         return new ResponseEntity<>(new SampleResult("Started batch operation to fail all paused executions: " + jobId), HttpStatus.OK);
     }
 
-    @PostMapping(value="/listbatches")
+    @PostMapping(value="/listbatchoperations")
     ResponseEntity listBatches() {
         List<BatchOperationInfo> info =  getBatchInfo(client, null, null);
         if(info != null) {
@@ -123,7 +123,7 @@ public class SampleIntController {
         }
     }
 
-    @PostMapping(value="/stopbatches")
+    @PostMapping(value="/stopbatchoperations")
     ResponseEntity stopbatches() {
         List<BatchOperationInfo> info =  getBatchInfo(client, null, null);
         if(info != null) {
