@@ -6,6 +6,7 @@ import io.temporal.api.enums.v1.ParentClosePolicy;
 import io.temporal.client.WorkflowExecutionAlreadyStarted;
 import io.temporal.client.WorkflowServiceException;
 import io.temporal.failure.ActivityFailure;
+import io.temporal.failure.ApplicationFailure;
 import io.temporal.failure.ChildWorkflowFailure;
 import io.temporal.sample.model.WorkflowContext;
 import io.temporal.spring.boot.WorkflowImpl;
@@ -105,18 +106,17 @@ public class Saga {
         @Override
         public void cleanup(String activityTaskQueue, Map<String, WorkflowContext> compensationInfo) {
             if (compensationInfo != null && compensationInfo.size() > 0) {
-
-                for (String activityType : compensationInfo.keySet()) {
-                    ActivityStub activityStub = Workflow.newUntypedActivityStub(ActivityOptions.newBuilder()
-                            .setStartToCloseTimeout(Duration.ofSeconds(2))
-                            .setTaskQueue(activityTaskQueue)
-                            .build());
-
-                    try {
+                try {
+                    for (String activityType : compensationInfo.keySet()) {
+                        ActivityStub activityStub = Workflow.newUntypedActivityStub(ActivityOptions.newBuilder()
+                                .setStartToCloseTimeout(Duration.ofSeconds(2))
+                                .setTaskQueue(activityTaskQueue)
+                                .build());
                         activityStub.execute(activityType, WorkflowContext.class, compensationInfo.get(activityType));
-                    } catch (ActivityFailure af) {
-                        logger.error("Compensation activity failure: " + af.getMessage());
                     }
+                } catch (ActivityFailure e) {
+                    logger.warn("Compensation activity failure: " + e.getMessage());
+                    throw ApplicationFailure.newFailure("failing compensation", e.getCause().getClass().getName());
                 }
             }
         }

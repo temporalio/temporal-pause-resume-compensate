@@ -69,44 +69,24 @@ public class SampleIntController {
         }
     }
 
-    @PostMapping(value = "/retryall")
-    ResponseEntity retryall() {
-        String jobId = UUID.randomUUID().toString();
-        client.getWorkflowServiceStubs()
-                .blockingStub()
-                .startBatchOperation(
-                        StartBatchOperationRequest.newBuilder()
-                                .setNamespace(client.getOptions().getNamespace())
-                                .setJobId(jobId)
-                                .setVisibilityQuery("pause=true")
-                                .setReason("Retrying all paused executions")
-                                .setSignalOperation(BatchOperationSignal.newBuilder()
-                                        .setSignal("retry")
-                                        .setIdentity(client.getOptions().getIdentity())
-                                        .build())
-                                .build());
-
-        return new ResponseEntity<>(new SampleResult("Started batch operation to retry all paused executions: " + jobId), HttpStatus.OK);
+    @PostMapping(value = "/retrysample")
+    ResponseEntity retrySample() {
+        return runBatchSignal("WorkflowType='SampleWorkflow' AND pause=true", "retry");
     }
 
-    @PostMapping(value = "/failall")
-    ResponseEntity failall() {
-        String jobId = UUID.randomUUID().toString();
-        client.getWorkflowServiceStubs()
-                .blockingStub()
-                .startBatchOperation(
-                        StartBatchOperationRequest.newBuilder()
-                                .setNamespace(client.getOptions().getNamespace())
-                                .setJobId(jobId)
-                                .setVisibilityQuery("pause=true")
-                                .setReason("Failing all paused executions")
-                                .setSignalOperation(BatchOperationSignal.newBuilder()
-                                        .setSignal("fail")
-                                        .setIdentity(client.getOptions().getIdentity())
-                                        .build())
-                                .build());
+    @PostMapping(value = "/retrycompensation")
+    ResponseEntity retryCompensation() {
+        return runBatchSignal("WorkflowType='SagaChildWorkflow' AND pause=true", "retry");
+    }
 
-        return new ResponseEntity<>(new SampleResult("Started batch operation to fail all paused executions: " + jobId), HttpStatus.OK);
+    @PostMapping(value = "/failsample")
+    ResponseEntity failSample() {
+        return runBatchSignal("WorkflowType='SampleWorkflow' AND pause=true", "fail");
+    }
+
+    @PostMapping(value = "/failcompensation")
+    ResponseEntity failCompensation() {
+        return runBatchSignal("WorkflowType='SagaChildWorkflow' AND pause=true", "fail");
     }
 
     @PostMapping(value = "/listbatchoperations")
@@ -159,6 +139,25 @@ public class SampleIntController {
         } else {
             return info;
         }
+    }
+
+    private ResponseEntity runBatchSignal(String visibilityQuery, String signalName) {
+        String jobId = UUID.randomUUID().toString();
+        client.getWorkflowServiceStubs()
+                .blockingStub()
+                .startBatchOperation(
+                        StartBatchOperationRequest.newBuilder()
+                                .setNamespace(client.getOptions().getNamespace())
+                                .setJobId(jobId)
+                                .setVisibilityQuery(visibilityQuery)
+                                .setReason("Retrying all paused executions")
+                                .setSignalOperation(BatchOperationSignal.newBuilder()
+                                        .setSignal(signalName)
+                                        .setIdentity(client.getOptions().getIdentity())
+                                        .build())
+                                .build());
+
+        return new ResponseEntity<>(new SampleResult("Started batch operation to retry all paused executions: " + jobId), HttpStatus.OK);
     }
 
 }

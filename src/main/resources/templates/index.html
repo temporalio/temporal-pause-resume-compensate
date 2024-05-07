@@ -6,30 +6,41 @@
     <div class="card">
         <div class="card-body">
             <h4 class="card-title">Sample Int</h4>
-            <h6>Sample Int description...</h6>
             <div class="form-group">
-                <br/><br/><br/>
-                <h5>Say hello to:</h5>
-                <form action="/run", id="sampleform">
-                    <p><input type="submit" value="Start Workflows" class="btn btn-primary" />
+                <br/><br/>
+                <h4>Start Executions:</h4>
+                <form action="/run" id="sampleform">
+                    <p><input type="submit" value="Start Example Workflows" class="btn btn-primary" />
                 </form>
-                <form action="/retryall", id="sampleform2">
+                <br/><br/>
+                <h4>Sample Workflow Operations:</h4>
+                <form action="/retrysample" id="sampleform2">
                     <p><input type="submit" value="Retry All Paused Workflows" class="btn btn-primary" />
                 </form>
-                <form action="/failall", id="sampleform3">
+                <form action="/failsample" id="sampleform3">
                     <p><input type="submit" value="Fail All Paused Workflows" class="btn btn-primary" />
                 </form>
-                <form action="/listbatchoperations", id="sampleform4">
+                <br/><br/>
+                <h4>Compensation Workflow Operations</h4>
+                <form action="/retrycompensation" id="sampleform4">
+                    <p><input type="submit" value="Retry All Paused Compensation Workflows" class="btn btn-primary" />
+                </form>
+                <form action="/failcompensation" id="sampleform5">
+                    <p><input type="submit" value="Fail All Paused Compensation Workflows" class="btn btn-primary" />
+                </form>
+                <br/><br/>
+                <h4>Batch Operations:</h4>
+                <form action="/listbatchoperations" id="sampleform6">
                     <p><input type="submit" value="List Batch Operations" class="btn btn-primary" />
                 </form>
-                <form action="/stopbatchoperations", id="sampleform5">
+                <form action="/stopbatchoperations" id="sampleform7">
                     <p><input type="submit" value="Stop Batch Operations" class="btn btn-primary" />
                 </form>
             </div>
         </div>
         <div style="width: 18rem;">
             <div>
-                <h5 class="card-title">Messages:</h5>
+                <h4 class="card-title">Operation Results:</h4>
                 <div id="result"></div>
             </div>
         </div>
@@ -129,6 +140,50 @@
     });
 
     $("#sampleform5").submit(function( event ) {
+        event.preventDefault();
+
+        var $form = $( this )
+        var url = $form.attr( "action" );
+
+        $.ajax({
+            'url': url,
+            'method':'POST',
+            'dataType': 'json',
+            'contentType': 'application/json',
+            'data':JSON.stringify({
+            }),
+            success: function(response) {
+                $( "#result" ).empty().append( response.message );
+            },
+            error: function(XMLHttpRequest, textStatus, errorThrown) {
+                alert("Status: " + textStatus); alert("Error: " + errorThrown);
+            }
+        });
+    });
+
+    $("#sampleform6").submit(function( event ) {
+        event.preventDefault();
+
+        var $form = $( this )
+        var url = $form.attr( "action" );
+
+        $.ajax({
+            'url': url,
+            'method':'POST',
+            'dataType': 'json',
+            'contentType': 'application/json',
+            'data':JSON.stringify({
+            }),
+            success: function(response) {
+                $( "#result" ).empty().append( response.message );
+            },
+            error: function(XMLHttpRequest, textStatus, errorThrown) {
+                alert("Status: " + textStatus); alert("Error: " + errorThrown);
+            }
+        });
+    });
+
+    $("#sampleform7").submit(function( event ) {
         event.preventDefault();
 
         var $form = $( this )

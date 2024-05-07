@@ -50,7 +50,7 @@ public class SampleWorkflowImpl implements SampleWorkflow {
             // If we dont handle it here we would fail execution
             logger.warn("Activity failure: " + e.getMessage());
             saga.compensate();
-            throw ApplicationFailure.newFailure("failing execution after saga", "Saga...");
+            throw ApplicationFailure.newFailure("failing execution after compensation initiated", e.getCause().getClass().getName());
         }
         return new SampleResult("Parent wf: result, no compensation initiated....");
 
