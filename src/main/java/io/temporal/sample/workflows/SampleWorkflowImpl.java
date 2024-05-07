@@ -1,11 +1,14 @@
 package io.temporal.sample.workflows;
 
+import io.temporal.activity.ActivityOptions;
+import io.temporal.common.RetryOptions;
 import io.temporal.failure.ActivityFailure;
 import io.temporal.failure.ApplicationFailure;
 import io.temporal.sample.activities.SampleActivities;
-import io.temporal.sample.model.SampleInput;
 import io.temporal.sample.model.SampleResult;
 import io.temporal.sample.model.WorkflowContext;
+import io.temporal.sample.model.dsl.Flow;
+import io.temporal.sample.model.dsl.FlowAction;
 import io.temporal.spring.boot.WorkflowImpl;
 import io.temporal.workflow.*;
 import org.slf4j.Logger;
@@ -22,71 +25,44 @@ public class SampleWorkflowImpl implements SampleWorkflow {
     private static io.temporal.sample.comp.Saga saga;
 
     @Override
-    public SampleResult run(SampleInput input) {
+    public SampleResult run(Flow flow) {
         // Saga
         saga = new io.temporal.sample.comp.Saga("cleanupsagachild", "sagacleanupqueue");
+        if(flow == null || flow.getActions().isEmpty()) {
+            throw ApplicationFailure.newFailure("Flow is null or does not have any actions", "illegal flow");
+        }
 
-        // Create cancellation scope for timer
-//        CancellationScope timerCancellationScope =
-//                Workflow.newCancellationScope(
-//                        () -> {
-//                            timerPromise = Workflow.newTimer(Duration.ofSeconds(input.getTimer()));
-//                        });
-//        timerCancellationScope.run();
-//        // Create cancellation scope for activities
-//        CancellationScope activityCancellationScope =
-//                Workflow.newCancellationScope(
-//                        () -> {
-//                            activitiesPromise = Async.procedure(this::runActivities);
-//                        });
-//        activityCancellationScope.run();
-
-        // Wait for timer and activities promises, whichever completes first
         try {
-            runActivities();
+            runActions(flow);
         } catch (ActivityFailure e) {
-            // We need to handler ActivityFailure here as it will be delivered to workflow code in this .get() call
-            // However we just log it as will handle later with activitiesPromise.getFailure
-            // If we dont handle it here we would fail execution
             logger.warn("Activity failure: " + e.getMessage());
             saga.compensate();
             throw ApplicationFailure.newFailure("failing execution after compensation initiated", e.getCause().getClass().getName());
         }
         return new SampleResult("Parent wf: result, no compensation initiated....");
-
-//        // if our timer promise completed but activities are still running
-//        if (timerPromise.isCompleted() && !activitiesPromise.isCompleted()) {
-//            activityCancellationScope.cancel("timer fired");
-//            // run compensation in async child wf
-//            saga.compensate();
-//            // fail execution
-//            throw ApplicationFailure.newFailure("failing execution", "TimerFired");
-//        } else {
-//            // cancel timer so TimerFired does not get delivered to our worker
-//            // in case timer does fire before or at the time we want to complete execution
-//            timerCancellationScope.cancel("activities completed/failed before timer");
-//            if (activitiesPromise.getFailure() != null) {
-//                // run compensation in async child wf
-//                saga.compensate();
-//                return new SampleResult("Parent wf: result, compensation initiated...");
-//            }
-//            return new SampleResult("Parent wf: result, no compensation initiated....");
-//        }
     }
 
-    private void runActivities() {
+    private void runActions(Flow flow) {
 
-        saga.addCompensation("CompensateOne", new WorkflowContext("CompensateOne"));
-        activities.one();
+        for(FlowAction action: flow.getActions()) {
+            // build activity options based on flow action input
+            ActivityOptions.Builder activityOptionsBuilder = ActivityOptions.newBuilder();
+            activityOptionsBuilder.setStartToCloseTimeout(Duration.ofSeconds(action.getStartToCloseSec()));
+            if(action.getRetries() > 0) {
+                activityOptionsBuilder.setRetryOptions(RetryOptions.newBuilder()
+                                .setMaximumAttempts(action.getRetries())
+                        .build());
+            }
+            // create untyped activity stub and run activity based on flow action
+            ActivityStub activityStub = Workflow.newUntypedActivityStub(activityOptionsBuilder.build());
 
-        saga.addCompensation("CompensateTwo", new WorkflowContext("CompensateTwo"));
-        activities.two();
-
-        saga.addCompensation("CompensateThree", new WorkflowContext("CompensateThree"));
-        activities.three();
-
-        saga.addCompensation("CompensateFour", new WorkflowContext("CompensateFour"));
-        activities.four();
+            // if action has compensation, add it now
+            if(action.getCompensateBy() != null && !action.getCompensateBy().isEmpty()) {
+                saga.addCompensation(action.getCompensateBy(), new WorkflowContext(action.getCompensateBy()));
+            }
+            // note for sample simplicity our activities dont have a return type atm
+            activityStub.execute(action.getAction(), Void.class);
+        }
     }
 
 }

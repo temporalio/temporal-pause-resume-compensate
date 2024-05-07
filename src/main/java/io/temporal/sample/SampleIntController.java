@@ -1,5 +1,6 @@
 package io.temporal.sample;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import com.google.protobuf.ByteString;
 import io.temporal.api.batch.v1.BatchOperationInfo;
@@ -15,8 +16,11 @@ import io.temporal.common.SearchAttributeKey;
 import io.temporal.common.SearchAttributes;
 import io.temporal.sample.model.SampleInput;
 import io.temporal.sample.model.SampleResult;
+import io.temporal.sample.model.dsl.Flow;
 import io.temporal.sample.workflows.SampleWorkflow;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -38,10 +42,16 @@ public class SampleIntController {
     @Autowired
     WorkflowClient client;
 
+    @Value("classpath:dsl/sampleflow.json")
+    Resource sampleFlowResource;
+
     @GetMapping("/")
     public String update() {
         return "index";
     }
+
+    // customize if needed...
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     @PostMapping(
             value = "/run",
@@ -49,6 +59,12 @@ public class SampleIntController {
             produces = {MediaType.APPLICATION_JSON_VALUE})
     ResponseEntity sampleInt(@RequestBody SampleInput input) {
         // start 10 workflows
+
+        Flow flow = getFlowFromResource(sampleFlowResource);
+        if(flow == null) {
+            throw new IllegalArgumentException("Unable to read flow definition");
+        }
+
         for (int i = 0; i < 10; i++) {
             SampleWorkflow workflow =
                     client.newWorkflowStub(SampleWorkflow.class,
@@ -60,7 +76,7 @@ public class SampleIntController {
                                             .build())
                                     .build());
             // start async
-            WorkflowClient.start(workflow::run, input);
+            WorkflowClient.start(workflow::run, flow);
         }
         try {
             return new ResponseEntity<>(new SampleResult("Started all workflows"), HttpStatus.OK);
@@ -159,6 +175,16 @@ public class SampleIntController {
 
         return new ResponseEntity<>(new SampleResult("Started batch operation to retry all paused executions: " + jobId), HttpStatus.OK);
     }
+
+    private Flow getFlowFromResource(Resource resource) {
+        try {
+            return objectMapper.readValue(resource.getURL(), Flow.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
 
 }
 

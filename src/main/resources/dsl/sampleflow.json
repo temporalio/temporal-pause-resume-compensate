@@ -1,0 +1,31 @@
+{
+  "id": "sampleFlow",
+  "version": 1,
+  "description": "Sample Flow Definition",
+  "actions": [
+    {
+      "action": "One",
+      "compensateBy": "CompensateOne",
+      "retries": 5,
+      "startToCloseSec": 5
+    },
+    {
+      "action": "Two",
+      "compensateBy": "CompensateTwo",
+      "retries": 5,
+      "startToCloseSec": 5
+    },
+    {
+      "action": "Three",
+      "compensateBy": "CompensateThree",
+      "retries": 5,
+      "startToCloseSec": 5
+    },
+    {
+      "action": "Four",
+      "compensateBy": "CompensateFour",
+      "retries": 5,
+      "startToCloseSec": 5
+    }
+  ]
+}
