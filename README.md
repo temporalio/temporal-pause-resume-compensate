@@ -3,18 +3,18 @@ Demos various aspects of [Temporal](https://temporal.io) using the [Java SDK](ht
 
 The app will start 10 workflows. Each workflow has four activities and each activity has a chance to fail. Once an activity fails the workflow is paused. A signal is used to resume (retry) or fail workflow. Failing workflow triggers compensation and our SAGA, executed through a child workflow. Signals are sent to multiple workflows using a batch operation. The workflow definition is also provided as DSL (json) showing how to create an abstraction in front of a Temporal workflow.
 
-| Prerequisites |  | __ | Features       |  | __ | Patterns            |   |
-|:--------------|--|----|----------------|--|----|---------------------|---|
-| Java 17+      | ✅ | __  | Schedule       |  | __ | Entity              | ✅ |
-|               |  | __ | Local Activity |  ✅ | __ | Long-Running        |   |
-|               |  | __ | Timer          | ✅ | __ | Fanout              |   |
-|               |  | __ | Signal         | ✅ | __ | Continue As New     |   |
-|               |  | __ | Query          |  | __ | Manual Intervention | ✅ |
-|               |  | __ | Update         |  | __ | Saga                | ✅ |
-|               |  | __ | Heartbeat      |  | __ | Long-polling        |   |
-|               |  | __ | Retry          | ✅ | __ | Child Workflow      | ✅ |
-|               |  | __ | Data Converter |  | __ | Batch Operations    |  ✅ |
-|               |  | __ | Polyglot       |  | __ | DSL                 | ✅ |
+| Prerequisites |   | __ | Features       |  | __ | Patterns            | |
+|:--------------|---|----|----------------|--|----|---------------------|-|
+| Java 17+      | ✅ | __  | Schedule       |  | __ | Entity              | |
+| Temporal CLI  | ✅   | __ | Local Activity |  ✅ | __ | Long-Running        | |
+|               |   | __ | Timer          | ✅ | __ | Fanout              | |
+|               |   | __ | Signal         | ✅ | __ | Continue As New     | |
+|               |   | __ | Query          |  | __ | Manual Intervention | ✅ |
+|               |   | __ | Update         |  | __ | Saga                | ✅ |
+|               |   | __ | Heartbeat      |  | __ | Long-polling        | |
+|               |   | __ | Retry          | ✅ | __ | Batch Operations    | ✅ |
+|               |   | __ | Data Converter |  | __ | DSL                 |  ✅ |
+|               |   | __ | Child Workflow | ✅ | __ |                  | |
 
 ### Start Local Temporal Server
 ```bash
