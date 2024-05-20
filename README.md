@@ -1,5 +1,5 @@
 ## Sample Int
-Demos various aspects of [Temporal](https://temporal.io) using the [Java SDK](https://github.com/temporalio/sdk-java). The sample is a apringboot application.
+Demos various aspects of [Temporal](https://temporal.io) using the [Java SDK](https://github.com/temporalio/sdk-java). The sample is a SpringBboot application.
 
 The app will start 10 workflows. Each workflow has four activities and each activity has a chance to fail. Once an activity fails the workflow is paused. A signal is used to resume (retry) or fail workflow. Failing workflow triggers compensation and our SAGA, executed through a child workflow. Signals are sent to multiple workflows using a batch operation. The workflow definition is provided as DSL (json) showing how to create an abstraction in front of a Temporal workflow.
 
@@ -15,6 +15,10 @@ The app will start 10 workflows. Each workflow has four activities and each acti
 |               |   | __ | Retry          | ✅ | __ | Batch Operations    | ✅ |
 |               |   | __ | Data Converter |  | __ | DSL                 |  ✅ |
 |               |   | __ | Child Workflow | ✅ | __ |                  | |
+
+### Install Temporal CLI
+
+Detailed instructions are in docs https://docs.temporal.io/cli#install
 
 ### Start Local Temporal Server
 ```bash
