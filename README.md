@@ -1,4 +1,4 @@
-## Sample Int
+## Temporal Sample - Pause/Resume and Compensation
 Demos various aspects of [Temporal](https://temporal.io) using the [Java SDK](https://github.com/temporalio/sdk-java). The sample is a SpringBoot application.
 
 The app will start 10 workflows. Each workflow has four activities and each activity has a chance to fail. Once an activity fails the workflow is paused. 
